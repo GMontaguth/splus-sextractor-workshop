@@ -35,7 +35,7 @@ Clona el repositorio (código + configs), y luego descarga las imágenes del
 ```bash
 git clone https://github.com/GMontaguth/splus-sextractor-workshop.git
 cd splus-sextractor-workshop
-mkdir -p data && cd data
+mkdir -p data 
 ```
 
 Descarga los seis archivos FITS, con el script o a mano:
