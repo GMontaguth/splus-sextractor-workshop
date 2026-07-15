@@ -1,0 +1,47 @@
+# -----------------------------------------------------------------------------
+#  prepsfex.param  —  WORKED SOLUTION  (the PSFEx pass — pass 1)
+#
+#  This is a DIFFERENT .param from your science one. It is short, and it exists
+#  for one reason: to feed PSFEx.
+#
+#  Run it with:  -CATALOG_TYPE FITS_LDAC   (mandatory — PSFEx reads nothing else)
+#                -DETECT_THRESH 5.0        (you want GOOD STARS, not completeness)
+#                -PHOT_APERTURES 10        (ONE value, to match FLUX_APER(1))
+# -----------------------------------------------------------------------------
+
+VIGNET(35,35)      # *** THE WHOLE REASON THIS PASS EXISTS ***
+                   # A pixel cutout around every source.
+                   # PSFEx never opens your image — it only reads the catalog.
+                   # So the pixels have to travel INSIDE the catalog.
+                   #
+                   # This is why the .cat file is huge. Expected.
+                   #
+                   # Must be LARGER than PSF_SIZE in default.psfex.
+
+X_IMAGE            # PSFEx needs positions to fit the spatial variation
+Y_IMAGE            # polynomial — how the PSF changes across the field.
+
+FLUX_RADIUS        # The axis on which PSFEx finds the STELLAR LOCUS.
+                   # Point sources all have the same size — the PSF — so they
+                   # form a vertical locus. PSFEx finds it automatically.
+
+FLUX_APER(1)       # The other axis: brightness.
+FLUXERR_APER(1)    # A FIXED aperture, not Kron — you want something that does
+                   # not depend on the measured morphology.
+                   #
+                   # Must match PHOTFLUX_KEY in default.psfex. If they disagree,
+                   # PSFEx dies with an unhelpful error.
+
+ELONGATION         # A/B. A star is ~1. This is the anti-galaxy filter
+                   # (SAMPLE_MAXELLIP).
+
+SNR_WIN            # Windowed S/N — more precise than the aperture one.
+                   # This is what SAMPLE_MINSNR cuts on. A faint star gives you
+                   # a noisy PSF.
+
+FLAGS              # So PSFEx can throw out the saturated ones (SAMPLE_FLAGMASK).
+                   #
+                   # A SATURATED STAR HAS A FLAT CORE. If one gets into the fit,
+                   # your PSF comes out flattened in the middle — and every
+                   # MAG_PSF and SPREAD_MODEL you compute afterwards is wrong.
+                   # Silently.

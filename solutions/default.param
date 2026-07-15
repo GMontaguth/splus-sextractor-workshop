@@ -1,0 +1,53 @@
+# -----------------------------------------------------------------------------
+#  default.param  —  WORKED SOLUTION  (the SCIENCE run)
+#
+#  If a column is not in this file, it does not appear in your catalog —
+#  even though SExtractor computed it. It is not a bug. You did not ask for it.
+# -----------------------------------------------------------------------------
+
+# --- Identity and position ---
+NUMBER
+X_IMAGE
+Y_IMAGE
+ALPHA_J2000                # RA/Dec via the WCS. Needs WCS in the header.
+DELTA_J2000
+
+# --- Photometry: FIXED aperture. This is what colours are made of. ---
+MAG_APER                   # No (N) -> ONE aperture. PHOT_APERTURES must have
+MAGERR_APER                # exactly one value. For three, write MAG_APER(3)
+FLUX_APER                  # and put three values in PHOT_APERTURES.
+FLUXERR_APER
+
+# --- Photometry: Kron. Total-flux proxy. ADAPTIVE — beware for colours. ---
+MAG_AUTO
+MAGERR_AUTO
+FLUX_AUTO                  # Ask for the flux too, not just the magnitude.
+FLUXERR_AUTO               # A negative flux (noise) becomes MAG = 99. The flux
+KRON_RADIUS                # tells you what actually happened.
+
+# --- Photometry: Petrosian ---
+MAG_PETRO
+MAGERR_PETRO
+PETRO_RADIUS
+
+# --- Shape ---
+FLUX_RADIUS                # radius enclosing 50% of the flux.
+                           # This is the y-axis of the classic star/galaxy plot.
+FWHM_IMAGE
+A_IMAGE
+B_IMAGE
+THETA_IMAGE
+ELONGATION
+ELLIPTICITY
+ISOAREA_IMAGE
+
+# --- Classification and quality ---
+CLASS_STAR                 # neural net. Collapses toward 0.5 at low S/N.
+FLAGS                      # *** NEVER remove this. ***
+                           #   1  bright neighbour contaminates
+                           #   2  was deblended
+                           #   4  SATURATED
+                           #   8  truncated at the edge
+                           #  16  incomplete aperture
+                           #  32  deblending memory overflow
+                           # They ADD UP. FLAGS == 0 is your clean sample.

@@ -1,0 +1,73 @@
+# -----------------------------------------------------------------------------
+#  final.param  —  WORKED SOLUTION  (SExtractor pass 2, WITH the PSF)
+#
+#  Your science .param, PLUS the columns that only exist once you hand
+#  SExtractor a PSF model:
+#
+#     sex image.fits -c config/default.sex \
+#         -PARAMETERS_NAME config/final.param \
+#         -PSF_NAME prepsfex.psf
+#
+#  This run is SLOW. For every source, SExtractor now evaluates the polynomial
+#  to build the PSF AT THAT POSITION, then does an iterative fit. That is why
+#  it costs what it costs — and it tells you something about when it is worth it.
+# -----------------------------------------------------------------------------
+
+# --- Identity and position ---
+NUMBER
+X_IMAGE
+Y_IMAGE
+ALPHA_J2000
+DELTA_J2000
+
+# --- Photometry ---
+MAG_APER
+MAGERR_APER
+FLUX_APER
+FLUXERR_APER
+MAG_AUTO
+MAGERR_AUTO
+FLUX_AUTO
+FLUXERR_AUTO
+KRON_RADIUS
+
+# --- Shape ---
+FLUX_RADIUS
+FWHM_IMAGE
+A_IMAGE
+B_IMAGE
+THETA_IMAGE
+ELONGATION
+ELLIPTICITY
+
+# --- Classification ---
+CLASS_STAR
+FLAGS
+
+# =============================================================================
+#  These need -PSF_NAME. They do not exist without it.
+# =============================================================================
+
+SPREAD_MODEL       # *** The one you came for. ***
+                   # How much wider is this source than the LOCAL PSF?
+                   #    ~0  -> it IS the PSF        -> STAR
+                   #    >0  -> extended             -> GALAXY
+                   #    <0  -> SHARPER than the PSF -> artefact / cosmic ray
+                   #
+                   # Why it needs the PSF: the comparison is against the PSF
+                   # AT THAT POSITION. The PSF varies across the field. A source
+                   # in the corner must be compared against a different PSF than
+                   # one in the centre.
+                   #
+                   # A typical star/galaxy cut is |SPREAD_MODEL| < 0.003 — but
+                   # that value is a DECISION. Plot it and choose your own.
+
+SPREADERR_MODEL
+
+MAG_PSF            # PSF-fit photometry. In a crowded field this beats an
+MAGERR_PSF         # aperture, which happily collects flux from the neighbours.
+FLUX_PSF           # ONLY valid for POINT SOURCES. Fitting a PSF to a galaxy
+FLUXERR_PSF        # gives you a meaningless number.
+
+CHI2_PSF           # How well the PSF fit that source. High -> not point-like,
+                   # or contaminated.

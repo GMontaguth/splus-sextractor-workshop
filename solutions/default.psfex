@@ -1,0 +1,99 @@
+# -----------------------------------------------------------------------------
+#  default.psfex  —  WORKED SOLUTION
+#
+#  Run:  psfex prepsfex.cat -c config/default.psfex
+# -----------------------------------------------------------------------------
+
+#-------------------------------- PSF model ----------------------------------
+
+BASIS_TYPE      PIXEL_AUTO   # The PSF is a literal IMAGE of pixels — no
+                             # functional form is assumed. That matters: a real
+                             # PSF has wings, spikes and asymmetries that no
+                             # Gaussian captures.
+BASIS_NUMBER    20
+PSF_SAMPLING    0.0          # 0 = automatic. PSFEx will oversample if your PSF
+                             # is near Nyquist (FWHM ~2 px is).
+PSF_ACCURACY    0.01
+PSF_SIZE        25,25        # [DECISION] model size in pixels.
+                             # *** MUST BE SMALLER THAN VIGNET(35,35). ***
+PSF_RECENTER    Y            # Sub-pixel recentring before stacking.
+                             # Without it, centring jitter artificially WIDENS
+                             # your PSF.
+
+#------------------------- Point source measurements -------------------------
+
+CENTER_KEYS     X_IMAGE,Y_IMAGE
+PHOTFLUX_KEY    FLUX_APER(1)      # MUST match what is in prepsfex.param.
+PHOTFLUXERR_KEY FLUXERR_APER(1)
+
+#----------------------------- PSF variability -------------------------------
+
+PSFVAR_KEYS     X_IMAGE,Y_IMAGE   # The PSF depends on POSITION.
+PSFVAR_GROUPS   1,1               # x and y in one polynomial group: P(x,y),
+                                  # not P(x) * P(y).
+PSFVAR_DEGREES  2                 # [DECISION] THE parameter.
+                                  #   0 -> constant PSF. Fast, and FALSE across
+                                  #        a wide field.
+                                  #   2 -> quadratic. 6 terms. Sensible default.
+                                  #   4 -> overfits unless you have many stars.
+                                  #
+                                  # Rule of thumb: ~10 stars per term.
+                                  # Degree 2 -> 6 terms -> you want 60+ stars.
+                                  # Check the 'accepted' number PSFEx prints.
+
+#----------------------------- Sample selection ------------------------------
+#
+#  This block decides WHICH STARS build your PSF. Get it wrong and everything
+#  downstream is wrong — silently.
+
+SAMPLE_AUTOSELECT  Y         # Find the stellar locus automatically, on the
+                             # FLUX_RADIUS vs magnitude plane.
+SAMPLEVAR_TYPE     SEEING
+SAMPLE_FWHMRANGE   1.5,6.0   # [DECISION] *** IN PIXELS, NOT ARCSEC. ***
+                             # Your seeing is ~2.2 px. Does it fall inside?
+                             #   Too narrow -> you reject good stars
+                             #   Too wide   -> you let in compact galaxies
+SAMPLE_VARIABILITY 0.2
+SAMPLE_MINSNR      20        # [DECISION] Faint stars -> noisy PSF. A star at
+                             # S/N = 5 contributes more noise than signal.
+SAMPLE_MAXELLIP    0.3       # [DECISION] The anti-galaxy filter.
+                             # A star is ~0. An edge-on galaxy is 0.5+.
+SAMPLE_FLAGMASK    0x00fe    # Reject everything except FLAGS = 0.
+                             #
+                             # *** THIS IS WHAT THROWS OUT THE SATURATED STARS. ***
+                             # A saturated star has a FLAT CORE. If it gets into
+                             # the fit, your PSF is flattened in the middle, and
+                             # every MAG_PSF and SPREAD_MODEL you compute is
+                             # wrong. Nothing crashes. You just get bad science.
+
+#----------------------------- Check-plots -----------------------------------
+#
+#  This is the block people delete. It is the block that matters.
+
+CHECKPLOT_DEV      PNG       # If your PLPlot has no PNG, PSFEx will hang and ask
+                             # you interactively. Ctrl-C, and use SVG or PSC.
+CHECKPLOT_TYPE     FWHM,ELLIPTICITY,COUNTS,COUNT_FRACTION,CHI2,RESIDUALS
+CHECKPLOT_NAME     chk/fwhm,chk/ellip,chk/counts,chk/countfrac,chk/chi2,chk/resi
+
+#----------------------------- Check-images ----------------------------------
+
+CHECKIMAGE_TYPE    CHI,PROTOTYPES,SAMPLES,RESIDUALS,SNAPSHOTS
+CHECKIMAGE_NAME    chk/chi.fits,chk/proto.fits,chk/samp.fits,chk/resi.fits,chk/snap.fits
+#
+#  SAMPLES    -> the stars it ACTUALLY USED. Zoom in. Are there galaxies in
+#                there? Saturated cores? If so, your PSF is contaminated —
+#                go back and tighten MINSNR / MAXELLIP.
+#  SNAPSHOTS  -> the MODEL, evaluated on a grid across the field. Not stars —
+#                the model. This is what "the PSF varies" actually looks like.
+#  RESIDUALS  -> star minus model. If every star has the same leftover pattern,
+#                your fit is bad.
+#  PROTOTYPES -> the polynomial coefficients. The first one is the mean PSF; the
+#                rest are CORRECTIONS, which is why they look faint and dipolar.
+
+#----------------------------- Miscellaneous ---------------------------------
+
+PSF_DIR
+VERBOSE_TYPE       NORMAL
+WRITE_XML          Y
+XML_NAME           psfex.xml
+NTHREADS           0

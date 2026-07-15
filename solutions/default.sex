@@ -1,0 +1,154 @@
+# -----------------------------------------------------------------------------
+#  default.sex  —  WORKED SOLUTION
+#
+#  Use this if you are stuck. But read the comments — the point is not the
+#  values, it is WHY they are what they are.
+#
+#  Every line marked [DECISION] is a choice. You should be able to defend it.
+#  Every line marked [FACT] came out of the image header. It is not a choice.
+# -----------------------------------------------------------------------------
+
+#-------------------------------- Catalog ------------------------------------
+
+CATALOG_NAME     test.cat
+CATALOG_TYPE     FITS_1.0        # FITS_LDAC is REQUIRED for the PSFEx pass.
+                                 # Different run, different .param file.
+PARAMETERS_NAME  config/default.param
+
+#------------------------------- Extraction ----------------------------------
+
+DETECT_TYPE      CCD
+DETECT_MINAREA   5               # [DECISION] minimum connected pixels
+DETECT_THRESH    1.5             # [DECISION] in sigma of the LOCAL background.
+                                 #   Lower  -> more detections, more spurious
+                                 #   Higher -> conservative, loses the faint end
+                                 #   There is no correct value. There is a value
+                                 #   correct for YOUR science.
+ANALYSIS_THRESH  1.5
+
+FILTER           Y
+FILTER_NAME      config/gauss_2.0_5x5.conv
+                                 # [FACT-ish] FWHMMEAN = 1.20" / 0.55"px = 2.2 px
+                                 #   The kernel is a MATCHED FILTER: it should
+                                 #   have the shape of what you are looking for.
+                                 #   For point sources, that is the PSF.
+                                 #   The number in the filename IS the FWHM in px.
+
+DEBLEND_NTHRESH  32              # tree resolution. You basically never touch it.
+DEBLEND_MINCONT  0.005           # [DECISION] THE parameter.
+                                 #   A branch is a real object only if its flux
+                                 #   exceeds MINCONT x the total flux of the blob.
+                                 #   0.0001 -> splits aggressively
+                                 #   0.005  -> S-PLUS / DES default
+                                 #   0.1    -> barely splits
+                                 #   This IS SExtractor's prior. You are choosing
+                                 #   what "a real object" means.
+
+CLEAN            Y
+CLEAN_PARAM      1.0
+
+MASK_TYPE        CORRECT
+
+#-------------------------------- Weighting ----------------------------------
+
+WEIGHT_TYPE      MAP_WEIGHT
+WEIGHT_IMAGE     data/HYDRA_D_0003_R.weight.fits
+                                 # NOT optional. The weight map tells SExtractor
+                                 # that the borders and the low-exposure regions
+                                 # are noisier. Without it, the local RMS is
+                                 # wrong there, and your "3-sigma detections" at
+                                 # the edge are not 3-sigma.
+                                 #
+                                 # In DUAL mode this takes TWO values:
+                                 #   -WEIGHT_TYPE  MAP_WEIGHT,MAP_WEIGHT
+                                 #   -WEIGHT_IMAGE det.weight.fits,meas.weight.fits
+
+#------------------------------ Photometry -----------------------------------
+
+PHOT_APERTURES   5.45            # [DECISION] DIAMETER in PIXELS.
+                                 #   3" / 0.55"px = 5.45 px
+                                 #   A FIXED aperture. This is what you use for
+                                 #   COLOURS — identical in every band, so the
+                                 #   colour is real.
+                                 #   Must match the (N) in MAG_APER(N).
+
+PHOT_AUTOPARAMS  2.5, 3.5        # Kron. Total-flux proxy (~94% of a typical
+                                 # profile). ADAPTIVE — the ellipse size depends
+                                 # on the shape measured in THAT image. Which is
+                                 # exactly why band-by-band colours are wrong.
+
+PHOT_PETROPARAMS 2.0, 3.5        # Petrosian. For comparison with SDSS.
+
+SATUR_LEVEL      1606.2          # [FACT] from the header keyword SATURATE.
+                                 #   *** THE DEFAULT IS 50000. YOURS IS NOT. ***
+                                 #   Leave it at 50000 and saturated stars are
+                                 #   never flagged. FLAGS=4 never appears. And
+                                 #   you will not notice.
+
+MAG_ZEROPOINT    22.784          # [DECISION] the median of a 15x15 spatial model.
+                                 #   SExtractor does NOT compute the ZP. It only
+                                 #   applies it:
+                                 #      MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT
+                                 #   This number came from a calibration pipeline
+                                 #   that ran long before you.
+                                 #   Using the median is an approximation. Check
+                                 #   'std' in zeropoints.txt and decide if it is
+                                 #   a safe one. It is not the same in every band.
+
+MAG_GAMMA        4.0
+GAIN             726.7           # [FACT] header
+PIXEL_SCALE      0.55            # [FACT] S-PLUS
+
+#------------------------- Star/Galaxy Separation ----------------------------
+
+SEEING_FWHM      1.20            # [FACT] header FWHMMEAN, in ARCSEC.
+                                 #   Feeds the CLASS_STAR neural net.
+                                 #   DIFFERENT IN EVERY BAND. Change it.
+STARNNW_NAME     config/default.nnw
+
+#------------------------------ Background -----------------------------------
+
+BACK_SIZE        64              # [DECISION] mesh size, in pixels.
+                                 #   SMALL -> follows the sky closely, but EATS
+                                 #            extended objects. Your galaxy ends
+                                 #            up inside your sky model, and gets
+                                 #            subtracted from itself.
+                                 #   LARGE -> preserves the galaxy, but cannot
+                                 #            follow a steep gradient near a
+                                 #            bright star.
+                                 #   Run 32 / 64 / 256 and LOOK at the models.
+                                 #   Then MEASURE what it did to your photometry.
+BACK_FILTERSIZE  3
+
+BACKPHOTO_TYPE   LOCAL           # [DECISION]
+                                 #   GLOBAL -> use the interpolated background map
+                                 #   LOCAL  -> estimate in an annulus around each
+                                 #             source. Better with structured sky
+                                 #             (halos, cirrus). Noisier, and in a
+                                 #             crowded field the annulus can land
+                                 #             on a neighbour.
+BACKPHOTO_THICK  24
+
+#------------------------------ Check Images ---------------------------------
+
+CHECKIMAGE_TYPE  SEGMENTATION,BACKGROUND
+CHECKIMAGE_NAME  check/seg.fits,check/bkg.fits
+                                 # NOT optional. The segmentation map is how you
+                                 # SEE whether the deblending worked. If you never
+                                 # open it, you are trusting numbers you never
+                                 # verified.
+                                 #
+                                 #   ds9 img.fits check/seg.fits check/bkg.fits \
+                                 #       -zscale -lock frame image -tile
+
+#--------------------- Memory (change with caution!) -------------------------
+
+MEMORY_OBJSTACK  10000
+MEMORY_PIXSTACK  3000000         # The default (300000) overflows on a large
+                                 # image. If you ever see "Pixel stack overflow",
+                                 # this is the knob.
+MEMORY_BUFSIZE   4096
+
+#----------------------------- Miscellaneous ---------------------------------
+
+VERBOSE_TYPE     NORMAL
