@@ -273,54 +273,68 @@ That last one is worth sitting with. Come find me when you see it.
 The point of this session is not to produce *a* catalog. It is to understand that
 different parameters produce **different catalogs of the same sky**.
 
-### 6a · `BACK_SIZE`
+You run these by hand. Type the command, change one parameter, run it again, and
+compare. Everything in the config can be overridden on the command line — so you never
+have to edit a file to try a value.
+
+### 6a · `DETECT_THRESH` and `DETECT_MINAREA`
+
+Run **at least three combinations of your own choosing.** For example, a loose one:
 
 ```bash
-bash scripts/02_explore_backsize.sh
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DETECT_THRESH 1.5 -DETECT_MINAREA 3 \
+    -CATALOG_NAME cat/thresh_loose.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_loose.fits
 ```
 
-This runs the same image at `BACK_SIZE` = 32, 64, 256 and saves the background models.
-Look at them **with the scale locked** (that matters — with auto-scaling the comparison
-is a lie):
+and a strict one:
 
 ```bash
-ds9 check/bkg_32.fits check/bkg_64.fits check/bkg_256.fits \
-    -scale limits -0.02 0.05 -lock frame image -lock scale yes -tile
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DETECT_THRESH 3.0 -DETECT_MINAREA 5 \
+    -CATALOG_NAME cat/thresh_strict.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_strict.fits
 ```
 
-Then measure the consequence:
+For each run, **read the last line SExtractor prints** — it tells you how many objects
+were detected and how many survived. Write the numbers down.
+
+Then look at the two segmentation maps side by side:
 
 ```bash
-python3 scripts/03_compare_backsize.py
+ds9 check/seg_loose.fits check/seg_strict.fits \
+    -lock frame image -tile
 ```
-
-**Questions to answer:**
-- Which value puts your *stars* into the sky model?
-- Which value makes bright sources come out fainter, and why?
-- Do the two curves cross? At what magnitude?
-- **How big is the effect, in magnitudes?** Is it big enough to care about?
-
-The last question is the important one. Do not guess. Measure.
-
-### 6b · `DETECT_THRESH` and `DETECT_MINAREA`
-
-Run at least three combinations of your own choosing. For each one, record:
-- how many objects were detected
-- how many survive `FLAGS == 0`
-
-Then look at the segmentation maps side by side.
 
 **There is no correct answer.** Hunting a transient counterpart? You want completeness.
 Measuring a luminosity function? Spurious sources at the faint end will destroy you.
 
 **The tool does not decide for you.**
 
-### 6c · `DEBLEND_MINCONT`
+### 6b · `DEBLEND_MINCONT`
 
-Find the largest, most extended galaxy in your cutout. Run with
-`DEBLEND_MINCONT = 0.0001` and with `0.1`. Look at the segmentation map both times.
+Find the largest, most extended galaxy in your cutout (open the image in DS9 and look).
+Run the same field twice, changing only `DEBLEND_MINCONT`:
 
-Does it fragment? Should it?
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DEBLEND_MINCONT 0.0001 \
+    -CATALOG_NAME cat/deb_aggressive.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_aggressive.fits
+```
+
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DEBLEND_MINCONT 0.1 \
+    -CATALOG_NAME cat/deb_conservative.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_conservative.fits
+```
+
+Look at the segmentation map around that galaxy both times. Zoom in.
+
+Does it fragment? **Should it?** (That depends entirely on what you are trying to
+measure — which is the whole point.)
 
 ---
 
@@ -434,10 +448,23 @@ Now do `u`, `g`, `r`.
 
 ### The wrong way (do it anyway — you need to see it break)
 
-Run SExtractor **three times, independently**, once per band. Cross-match by position.
-Compute colours.
+Run SExtractor **three times, independently**, once per band. Each band detects and
+measures on its own. Use the zero point for that band (from `zeropoints.txt`):
+
+```bash
+sex data/HYDRA_D_0003_U.fits -c config/default.sex \
+    -CATALOG_NAME cat/single_U.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_U> \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_U.weight.fits
+```
+
+Repeat for `G` and `R`, changing the band letter and the zero point each time.
+Then you have to cross-match the three catalogs by position and compute colours — which
+is exactly the problem.
 
 ### The right way: dual-image mode
+
+The syntax is two images separated by a **comma, no space**:
 
 ```bash
 sex detection.fits,measurement.fits -c config/default.sex
@@ -446,7 +473,41 @@ sex detection.fits,measurement.fits -c config/default.sex
 Sources are **detected** on the first image, **measured** on the second.
 
 Detect on `r` — it is deep and has the best seeing. Then measure through *those same
-apertures*, at *those same positions*, in all three bands.
+apertures*, at *those same positions*, in all three bands. So you run it three times, and
+the **first** image is always `r`:
+
+```bash
+# detect on R, measure on U
+sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_U.fits -c config/default.sex \
+    -CATALOG_NAME cat/dual_U.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_U> \
+    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
+    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_U.weight.fits
+```
+
+```bash
+# detect on R, measure on G
+sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_G.fits -c config/default.sex \
+    -CATALOG_NAME cat/dual_G.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_G> \
+    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
+    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_G.weight.fits
+```
+
+```bash
+# detect on R, measure on R (yes, R on itself)
+sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME cat/dual_R.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_R> \
+    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
+    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_R.weight.fits
+```
+
+Note that in dual mode `WEIGHT_TYPE` and `WEIGHT_IMAGE` each take **two**
+comma-separated values — one for the detection image, one for the measurement image.
+
+Because every band was detected on `r`, **row *i* is the same source in all three
+catalogs.** No cross-matching needed. That is the point.
 
 ### Why this is the whole game
 
@@ -461,19 +522,16 @@ There is nothing to cross-match.
 
 **Same aperture, same position, every band. Without that, there is no colour.**
 
-```bash
-bash scripts/04_dual_mode.sh
-```
-
 ---
 
 ## 9 · The deliverable
 
 Make the colour–colour diagram — `(u−g)` vs `(g−r)` — **twice**: once from your
-dual-mode catalog, once from the band-by-band catalogs.
+dual-mode catalogs, once from the band-by-band catalogs. This one script reads both sets
+and plots them side by side:
 
 ```bash
-python3 scripts/05_color_color.py
+python3 scripts/02_color_color.py
 ```
 
 Colour the points by `SPREAD_MODEL`.
@@ -484,6 +542,30 @@ scatter is not photometric noise. **It is your apertures disagreeing with each o
 Nothing crashed. Both catalogs look perfectly respectable in TOPCAT.
 
 One of them just has colours that mean nothing.
+
+---
+
+## 10 · Optional — if you finished early
+
+You made your colour–colour diagram with `MAG_APER`, not `MAG_PSF`. That was
+deliberate: `MAG_PSF` is only valid for **point sources**, and your diagram has
+galaxies in it. Fitting a PSF to a galaxy gives you a meaningless number.
+
+So when *is* `MAG_PSF` worth the trouble? This experiment answers that, on stars.
+
+```bash
+python3 scripts/03_psf_vs_aper.py
+```
+
+For an **isolated** star, `MAG_APER` and `MAG_PSF` agree — a star *is* the PSF, so
+integrating a fixed aperture and fitting the PSF give the same flux.
+
+For a star with a close **neighbour**, they diverge. The fixed aperture happily
+collects the neighbour's light too, so `MAG_APER` comes out too bright. The PSF fit
+knows what a star is shaped like and is not fooled.
+
+**That is the entire reason PSF photometry exists: crowded fields.** Not for the
+isolated stars — for the crowded ones.
 
 ---
 

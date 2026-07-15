@@ -275,42 +275,39 @@ Esa última vale la pena. Ven a buscarme cuando la veas.
 El punto de esta sesión no es producir *un* catálogo. Es entender que distintos
 parámetros producen **distintos catálogos del mismo cielo**.
 
-### 6a · `BACK_SIZE`
+Estos los corres a mano. Escribe el comando, cambia un parámetro, córrelo de nuevo, y
+compara. Todo en la config se puede sobrescribir por línea de comandos — así que nunca
+tienes que editar un archivo para probar un valor.
+
+### 6a · `DETECT_THRESH` y `DETECT_MINAREA`
+
+Corre **al menos tres combinaciones que elijas tú.** Por ejemplo, una laxa:
 
 ```bash
-bash scripts/02_explore_backsize.sh
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DETECT_THRESH 1.5 -DETECT_MINAREA 3 \
+    -CATALOG_NAME cat/thresh_loose.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_loose.fits
 ```
 
-Esto corre la misma imagen con `BACK_SIZE` = 32, 64, 256 y guarda los modelos de fondo.
-Míralos **con la escala bloqueada** (eso importa — con auto-escala la comparación es
-mentira):
+y una estricta:
 
 ```bash
-ds9 check/bkg_32.fits check/bkg_64.fits check/bkg_256.fits \
-    -scale limits -0.02 0.05 -lock frame image -lock scale yes -tile
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DETECT_THRESH 3.0 -DETECT_MINAREA 5 \
+    -CATALOG_NAME cat/thresh_strict.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_strict.fits
 ```
 
-Luego mide la consecuencia:
+Para cada corrida, **lee la última línea que imprime SExtractor** — te dice cuántos
+objetos se detectaron y cuántos sobrevivieron. Anota los números.
+
+Luego mira los dos segmentation maps lado a lado:
 
 ```bash
-python3 scripts/03_compare_backsize.py
+ds9 check/seg_loose.fits check/seg_strict.fits \
+    -lock frame image -tile
 ```
-
-**Preguntas que responder:**
-- ¿Qué valor mete tus *estrellas* en el modelo de cielo?
-- ¿Qué valor hace que las fuentes brillantes salgan más débiles, y por qué?
-- ¿Se cruzan las dos curvas? ¿En qué magnitud?
-- **¿Qué tan grande es el efecto, en magnitudes?** ¿Es suficiente para importar?
-
-La última pregunta es la importante. No adivines. Mide.
-
-### 6b · `DETECT_THRESH` y `DETECT_MINAREA`
-
-Corre al menos tres combinaciones que elijas tú. Para cada una, anota:
-- cuántos objetos se detectaron
-- cuántos sobreviven `FLAGS == 0`
-
-Luego mira los segmentation maps lado a lado.
 
 **No hay respuesta correcta.** ¿Buscas la contraparte de un transiente? Quieres
 completitud. ¿Mides una función de luminosidad? Las fuentes espurias en el extremo débil
@@ -318,12 +315,29 @@ te van a destruir.
 
 **La herramienta no decide por ti.**
 
-### 6c · `DEBLEND_MINCONT`
+### 6b · `DEBLEND_MINCONT`
 
-Encuentra la galaxia más grande y extendida de tu cutout. Corre con
-`DEBLEND_MINCONT = 0.0001` y con `0.1`. Mira el segmentation map las dos veces.
+Encuentra la galaxia más grande y extendida de tu cutout (abre la imagen en DS9 y busca).
+Corre el mismo campo dos veces, cambiando solo `DEBLEND_MINCONT`:
 
-¿Se fragmenta? ¿Debería?
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DEBLEND_MINCONT 0.0001 \
+    -CATALOG_NAME cat/deb_aggressive.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_aggressive.fits
+```
+
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -DEBLEND_MINCONT 0.1 \
+    -CATALOG_NAME cat/deb_conservative.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_conservative.fits
+```
+
+Mira el segmentation map alrededor de esa galaxia las dos veces. Haz zoom.
+
+¿Se fragmenta? **¿Debería?** (Eso depende por completo de qué estés tratando de medir —
+que es justamente el punto.)
 
 ---
 
@@ -440,10 +454,23 @@ Ahora haz `u`, `g`, `r`.
 
 ### La forma incorrecta (hazla igual — necesitas verla romperse)
 
-Corre SExtractor **tres veces, independientes**, una por banda. Cross-match por posición.
-Calcula colores.
+Corre SExtractor **tres veces, independientes**, una por banda. Cada banda detecta y mide
+por su cuenta. Usa el zero point de esa banda (de `zeropoints.txt`):
+
+```bash
+sex data/HYDRA_D_0003_U.fits -c config/default.sex \
+    -CATALOG_NAME cat/single_U.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_U> \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_U.weight.fits
+```
+
+Repite para `G` y `R`, cambiando la letra de la banda y el zero point cada vez.
+Luego tienes que cross-matchear los tres catálogos por posición y calcular colores — que
+es justamente el problema.
 
 ### La forma correcta: modo dual
+
+La sintaxis son dos imágenes separadas por **coma, sin espacio**:
 
 ```bash
 sex detection.fits,measurement.fits -c config/default.sex
@@ -452,7 +479,41 @@ sex detection.fits,measurement.fits -c config/default.sex
 Las fuentes se **detectan** en la primera imagen, se **miden** en la segunda.
 
 Detecta en `r` — es profunda y tiene el mejor seeing. Luego mide a través de *esas mismas
-aperturas*, en *esas mismas posiciones*, en las tres bandas.
+aperturas*, en *esas mismas posiciones*, en las tres bandas. Así que lo corres tres veces,
+y la **primera** imagen siempre es `r`:
+
+```bash
+# detecta en R, mide en U
+sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_U.fits -c config/default.sex \
+    -CATALOG_NAME cat/dual_U.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_U> \
+    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
+    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_U.weight.fits
+```
+
+```bash
+# detecta en R, mide en G
+sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_G.fits -c config/default.sex \
+    -CATALOG_NAME cat/dual_G.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_G> \
+    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
+    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_G.weight.fits
+```
+
+```bash
+# detecta en R, mide en R (sí, R sobre sí misma)
+sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME cat/dual_R.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_R> \
+    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
+    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_R.weight.fits
+```
+
+En modo dual, `WEIGHT_TYPE` y `WEIGHT_IMAGE` toman **dos** valores separados por coma —
+uno para la imagen de detección, uno para la de medición.
+
+Como todas las bandas se detectaron en `r`, **la fila *i* es la misma fuente en los tres
+catálogos.** No hay que cross-matchear. Ese es el punto.
 
 ### Por qué esto es todo el juego
 
@@ -466,19 +527,16 @@ separadas en `r` pueden ser **un solo blob** en `u`. No hay nada que cross-match
 
 **Misma apertura, misma posición, cada banda. Sin eso, no hay color.**
 
-```bash
-bash scripts/04_dual_mode.sh
-```
-
 ---
 
 ## 9 · El entregable
 
-Haz el diagrama color-color — `(u−g)` vs `(g−r)` — **dos veces**: una desde tu catálogo
-de modo dual, otra desde los catálogos banda por banda.
+Haz el diagrama color-color — `(u−g)` vs `(g−r)` — **dos veces**: una desde tus catálogos
+de modo dual, otra desde los catálogos banda por banda. Este script lee los dos conjuntos
+y los grafica lado a lado:
 
 ```bash
-python3 scripts/05_color_color.py
+python3 scripts/02_color_color.py
 ```
 
 Colorea los puntos por `SPREAD_MODEL`.
@@ -489,6 +547,31 @@ scatter extra no es ruido fotométrico. **Son tus aperturas en desacuerdo entre 
 Nada falló. Los dos catálogos se ven perfectamente respetables en TOPCAT.
 
 Uno de ellos solo tiene colores que no significan nada.
+
+---
+
+## 10 · Opcional — si terminaste temprano
+
+Hiciste tu diagrama color-color con `MAG_APER`, no con `MAG_PSF`. Fue a propósito:
+`MAG_PSF` solo es válido para **fuentes puntuales**, y tu diagrama tiene galaxias.
+Ajustar una PSF a una galaxia da un número sin sentido.
+
+Entonces, ¿*cuándo* vale la pena `MAG_PSF`? Este experimento lo responde, con
+estrellas.
+
+```bash
+python3 scripts/03_psf_vs_aper.py
+```
+
+Para una estrella **aislada**, `MAG_APER` y `MAG_PSF` coinciden — una estrella *es* la
+PSF, así que integrar una apertura fija y ajustar la PSF dan el mismo flujo.
+
+Para una estrella con un **vecino** cercano, divergen. La apertura fija recoge también
+la luz del vecino, así que `MAG_APER` sale demasiado brillante. El ajuste de PSF sabe
+qué forma tiene una estrella y no se deja engañar.
+
+**Esa es la razón entera de que exista la fotometría PSF: campos poblados.** No para las
+estrellas aisladas — para las apiñadas.
 
 ---
 
