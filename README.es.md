@@ -35,7 +35,7 @@ Clona el repositorio (código + configs), y luego descarga las imágenes del
 ```bash
 git clone https://github.com/GMontaguth/splus-sextractor-workshop.git
 cd splus-sextractor-workshop
-mkdir -p data 
+mkdir -p data && cd data
 ```
 
 Descarga los seis archivos FITS, con el script o a mano:
@@ -231,9 +231,27 @@ Este es el archivo que todos olvidan, y es el que decide qué obtienes realmente
 Mira el `default.param` que viene: todo está comentado con `#`. Es un menú, no una
 config.
 
-**Escribe el tuyo.** Necesitas, como mínimo:
+**El formato es simplísimo: un nombre de columna por línea.** Un `#` al inicio de la
+línea la comenta. Sin comas, sin comillas, sin encabezado. Nada más.
 
-- un identificador y una posición (píxel *y* cielo)
+Así, un `config/default.param` mínimo se ve así:
+
+```
+NUMBER
+X_IMAGE
+Y_IMAGE
+ALPHA_J2000
+DELTA_J2000
+MAG_AUTO
+MAGERR_AUTO
+FLUX_RADIUS
+CLASS_STAR
+FLAGS
+```
+
+Eso ya corre. **Ahora constrúyelo desde ahí.** Necesitas, como mínimo:
+
+- un identificador y una posición (píxel *y* cielo) — el bloque de arriba ya los tiene
 - una magnitud **y** su error
 - la forma (vas a necesitar `FLUX_RADIUS` — confía)
 - `FLAGS` ← **nunca lo dejes fuera**
@@ -248,12 +266,19 @@ config.
 | `MAG_AUTO` | elipse de Kron | proxy de flujo total (~94% de un perfil típico) |
 | `MAG_PETRO` | apertura de Petrosian | comparación con SDSS |
 
+Agrega las que elegiste a tu archivo, cada una en su propia línea (`MAG_APER`,
+`MAGERR_APER`, etc.).
+
 Para una salida vectorial como tres aperturas, la sintaxis es `MAG_APER(3)` — y **el
 número entre paréntesis debe coincidir con cuántos valores pongas en
 `PHOT_APERTURES`.**
 
 `PHOT_APERTURES` es un **diámetro en píxeles**. Si quieres una apertura de 3″:
 `3 / 0.55 = 5.45 px`.
+
+> ¿Atascado en qué columnas existen? Corre `sex -dd` — la lista completa de parámetros
+> está ahí, comentada, con una descripción de una línea de cada una. Y
+> `solutions/default.param` tiene una versión resuelta completa si la necesitas.
 
 ---
 

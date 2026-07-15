@@ -35,7 +35,7 @@ Clone the repository (code + configs), then download the images from the
 ```bash
 git clone https://github.com/GMontaguth/splus-sextractor-workshop.git
 cd splus-sextractor-workshop
-mkdir -p data 
+mkdir -p data && cd data
 ```
 
 Download the six FITS files, either with the script or by hand:
@@ -231,9 +231,27 @@ This is the file everyone forgets, and it is the one that decides what you actua
 Look at the shipped `default.param`: everything is commented out with `#`. It is a menu,
 not a config.
 
-**Write your own.** You need, at minimum:
+**The format is dead simple: one column name per line.** A `#` at the start of a line
+comments it out. No commas, no quotes, no header. That's it.
 
-- an identifier and a position (pixel *and* sky)
+So a minimal `config/default.param` looks like this:
+
+```
+NUMBER
+X_IMAGE
+Y_IMAGE
+ALPHA_J2000
+DELTA_J2000
+MAG_AUTO
+MAGERR_AUTO
+FLUX_RADIUS
+CLASS_STAR
+FLAGS
+```
+
+That already runs. **Now build yours up from there.** You need, at minimum:
+
+- an identifier and a position (pixel *and* sky) — the block above has these
 - a magnitude **and** its error
 - the shape (you will need `FLUX_RADIUS` — trust me)
 - `FLAGS` ← **never leave this out**
@@ -248,11 +266,18 @@ not a config.
 | `MAG_AUTO` | Kron ellipse | total-flux proxy (~94% of a typical profile) |
 | `MAG_PETRO` | Petrosian aperture | comparison with SDSS |
 
+Add the ones you chose to your file, each on its own line (`MAG_APER`, `MAGERR_APER`,
+and so on).
+
 For a vector output like three apertures, the syntax is `MAG_APER(3)` — and **the number
 in the parentheses must match how many values you put in `PHOT_APERTURES`.**
 
 `PHOT_APERTURES` is a **diameter in pixels**. If you want a 3″ aperture:
 `3 / 0.55 = 5.45 px`.
+
+> Stuck on which columns exist? Run `sex -dd` — the full parameter list is in there,
+> commented, with a one-line description of each. And `solutions/default.param` has a
+> complete worked version if you need it.
 
 ---
 
