@@ -29,27 +29,63 @@ most of what this session is.
 
 ## 0 · Get the data
 
-The images are attached to the GitHub **Release**, not to the repository (they are too
-large for git).
+Clone the repository (code + configs), then download the images from the
+**Release** (they are too large for git).
 
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/GMontaguth/splus-sextractor-workshop.git
 cd splus-sextractor-workshop
+mkdir -p data && cd data
+```
 
-# download the cutouts (~100 MB)
+Download the six FITS files, either with the script or by hand:
+
+```bash
+# either — run the helper
 bash scripts/00_get_data.sh
+
+# or — download them one by one
+BASE=https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data
+wget $BASE/HYDRA_D_0003_U.fits
+wget $BASE/HYDRA_D_0003_U.weight.fits
+wget $BASE/HYDRA_D_0003_G.fits
+wget $BASE/HYDRA_D_0003_G.weight.fits
+wget $BASE/HYDRA_D_0003_R.fits
+wget $BASE/HYDRA_D_0003_R.weight.fits
+cd ..
 ```
 
-You should end up with, in `data/`:
+You can also just click them in the browser:
+[U](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.fits) ·
+[U weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.weight.fits) ·
+[G](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.fits) ·
+[G weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.weight.fits) ·
+[R](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_R.fits) ·
+[R weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_R.weight.fits)
 
-```
-HYDRA_D_0003_U.fits          HYDRA_D_0003_U.weight.fits
-HYDRA_D_0003_G.fits          HYDRA_D_0003_G.weight.fits
-HYDRA_D_0003_R.fits          HYDRA_D_0003_R.weight.fits
-zeropoints.txt
-```
+These are 2000 × 2000 cutouts from S-PLUS iDR6, **already uncompressed** (the S-PLUS
+frames ship tile-compressed, which SExtractor 2.25 cannot read — that has been handled
+for you).
 
-These are 2000 × 2000 cutouts from S-PLUS iDR6, already uncompressed.
+### The zero points
+
+You will need these when you measure magnitudes. **They are NOT a single number** — in
+iDR6 the ZP is a spatial model that varies across the tile. Below is the median and the
+scatter of that variation:
+
+| band | median ZP | std (spatial scatter) |
+|---|---|---|
+| `u` | 20.054 | **0.035** |
+| `g` | 22.920 | 0.012 |
+| `r` | 22.784 | 0.013 |
+
+Use the median as your `MAG_ZEROPOINT`. But **look at that `std` column and think.**
+The scatter in `u` is almost three times the scatter in `g` and `r`. Is the median a
+safe approximation in every band? Be able to defend your answer.
+
+> SExtractor does **not** compute zero points. It only applies them:
+> `MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT`. That number came from a calibration pipeline
+> that ran long before you.
 
 **Check that everything is there before you go any further:**
 
@@ -167,15 +203,14 @@ source, the source you are looking for *is the PSF*.
 
 ## 3 · The zero point
 
-Open `data/zeropoints.txt`.
+You already saw the zero points in section 0. **The S-PLUS iDR6 zero point is not a
+number — it is a spatial model that varies across the tile.** The table gave you the
+median and the scatter (`std`) of that variation.
 
-You will see that each band has more than one number. **The S-PLUS iDR6 zero point is
-not a number — it is a spatial model that varies across the tile.**
-
-Look at `std` and `range` for each band. Then decide:
+Look at the `std` column again and decide:
 
 - Is a single median ZP good enough for what you are doing?
-- Is the answer the same in `u` as it is in `r`?
+- Is the answer the same in `u` (std 0.035) as it is in `r` (std 0.013)?
 
 **Whatever you decide, you must be able to defend it.** Write it down.
 
@@ -449,7 +484,7 @@ Now do `u`, `g`, `r`.
 ### The wrong way (do it anyway — you need to see it break)
 
 Run SExtractor **three times, independently**, once per band. Each band detects and
-measures on its own. Use the zero point for that band (from `zeropoints.txt`):
+measures on its own. Use the zero point for that band (from the table in section 0):
 
 ```bash
 sex data/HYDRA_D_0003_U.fits -c config/default.sex \

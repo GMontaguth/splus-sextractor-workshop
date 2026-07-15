@@ -7,9 +7,9 @@
 set -e
 
 # ---------------------------------------------------------------------
-# EDIT THIS: your repo and the release tag
+# Your repo and the release tag
 # ---------------------------------------------------------------------
-REPO="YOUR_USERNAME/splus-sextractor-workshop"
+REPO="GMontaguth/splus-sextractor-workshop"
 TAG="v1.0-data"
 # ---------------------------------------------------------------------
 
@@ -25,7 +25,6 @@ FILES=(
     "HYDRA_D_0003_G.weight.fits"
     "HYDRA_D_0003_R.fits"
     "HYDRA_D_0003_R.weight.fits"
-    "zeropoints.txt"
 )
 
 for f in "${FILES[@]}"; do

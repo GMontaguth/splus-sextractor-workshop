@@ -29,27 +29,63 @@ parte da sessão.
 
 ## 0 · Pegue os dados
 
-As imagens estão anexadas ao **Release** do GitHub, não ao repositório (são grandes
-demais para o git).
+Clone o repositório (código + configs), e depois baixe as imagens do
+**Release** (são grandes demais para o git).
 
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/GMontaguth/splus-sextractor-workshop.git
 cd splus-sextractor-workshop
+mkdir -p data && cd data
+```
 
-# baixa os cutouts (~100 MB)
+Baixe os seis arquivos FITS, com o script ou à mão:
+
+```bash
+# ou — rode o auxiliar
 bash scripts/00_get_data.sh
+
+# ou — baixe um por um
+BASE=https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data
+wget $BASE/HYDRA_D_0003_U.fits
+wget $BASE/HYDRA_D_0003_U.weight.fits
+wget $BASE/HYDRA_D_0003_G.fits
+wget $BASE/HYDRA_D_0003_G.weight.fits
+wget $BASE/HYDRA_D_0003_R.fits
+wget $BASE/HYDRA_D_0003_R.weight.fits
+cd ..
 ```
 
-Você deve terminar com, em `data/`:
+Você também pode clicar pelo navegador:
+[U](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.fits) ·
+[U weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.weight.fits) ·
+[G](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.fits) ·
+[G weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.weight.fits) ·
+[R](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_R.fits) ·
+[R weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_R.weight.fits)
 
-```
-HYDRA_D_0003_U.fits          HYDRA_D_0003_U.weight.fits
-HYDRA_D_0003_G.fits          HYDRA_D_0003_G.weight.fits
-HYDRA_D_0003_R.fits          HYDRA_D_0003_R.weight.fits
-zeropoints.txt
-```
+São cutouts de 2000 × 2000 do S-PLUS iDR6, **já descomprimidos** (os frames do S-PLUS vêm
+comprimidos com tile-compression, que o SExtractor 2.25 não lê — isso já foi resolvido
+para você).
 
-São cutouts de 2000 × 2000 do S-PLUS iDR6, já descomprimidos.
+### Os zero points
+
+Você vai precisar deles para medir magnitudes. **Não são um único número** — no iDR6 o ZP
+é um modelo espacial que varia ao longo do tile. Abaixo estão a mediana e o espalhamento
+dessa variação:
+
+| banda | ZP mediano | std (espalhamento espacial) |
+|---|---|---|
+| `u` | 20.054 | **0.035** |
+| `g` | 22.920 | 0.012 |
+| `r` | 22.784 | 0.013 |
+
+Use a mediana como seu `MAG_ZEROPOINT`. Mas **olhe essa coluna `std` e pense.** O
+espalhamento em `u` é quase três vezes o de `g` e `r`. A mediana é uma aproximação segura
+em todas as bandas? Saiba dizer por quê.
+
+> O SExtractor **não** calcula zero points. Ele só os aplica:
+> `MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT`. Esse número veio de um pipeline de calibração
+> que rodou muito antes de você.
 
 **Confira que está tudo lá antes de continuar:**
 
@@ -168,15 +204,14 @@ fonte pontual, a fonte que você procura *é a PSF*.
 
 ## 3 · O zero point
 
-Abra `data/zeropoints.txt`.
+Você já viu os zero points na seção 0. **O zero point do S-PLUS iDR6 não é um número — é
+um modelo espacial que varia ao longo do tile.** A tabela te deu a mediana e o
+espalhamento (`std`) dessa variação.
 
-Você vai ver que cada banda tem mais de um número. **O zero point do S-PLUS iDR6 não é um
-número — é um modelo espacial que varia ao longo do tile.**
-
-Olhe `std` e `range` de cada banda. Depois decida:
+Olhe a coluna `std` de novo e decida:
 
 - Um único ZP mediano é suficiente para o que você está fazendo?
-- A resposta é a mesma em `u` e em `r`?
+- A resposta é a mesma em `u` (std 0.035) e em `r` (std 0.013)?
 
 **Seja o que você decidir, você precisa conseguir defender.** Anote.
 
@@ -454,7 +489,7 @@ Agora faça `u`, `g`, `r`.
 ### O jeito errado (faça mesmo assim — você precisa ver quebrar)
 
 Rode o SExtractor **três vezes, independentes**, uma por banda. Cada banda detecta e mede
-por conta própria. Use o zero point daquela banda (de `zeropoints.txt`):
+por conta própria. Use o zero point daquela banda (da tabela na seção 0):
 
 ```bash
 sex data/HYDRA_D_0003_U.fits -c config/default.sex \

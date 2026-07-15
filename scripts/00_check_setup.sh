@@ -94,8 +94,7 @@ for b in U G R; do
         fi
     done
 done
-[ -f data/zeropoints.txt ] && echo "  [ok]   data/zeropoints.txt" \
-                           || { echo "  [FAIL] missing: data/zeropoints.txt"; FAIL=1; }
+echo "  [note] zero points are in the README (section 0), not a file."
 
 echo
 if [ $FAIL -eq 0 ]; then
