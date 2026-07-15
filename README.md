@@ -1,3 +1,8 @@
+<!-- LANGUAGE -->
+**English** · [Español](README.es.md) · [Português](README.pt.md)
+
+---
+
 # Building Astronomical Catalogs with Source Extractor
 
 **Hands-on Activity 2 — S-PLUS School**
