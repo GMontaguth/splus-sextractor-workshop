@@ -359,8 +359,8 @@ Run **at least three combinations of your own choosing.** Para esto puedes cambi
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DETECT_THRESH 1.5 -DETECT_MINAREA 3 \
-    -CATALOG_NAME cat/thresh_loose.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_loose.fits
+    -CATALOG_NAME thresh_loose.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_loose.fits
 ```
 
 and a strict one:
@@ -368,8 +368,8 @@ and a strict one:
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DETECT_THRESH 3.0 -DETECT_MINAREA 5 \
-    -CATALOG_NAME cat/thresh_strict.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_strict.fits
+    -CATALOG_NAME thresh_strict.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_strict.fits
 ```
 
 For each run, **read the last line SExtractor prints** — it tells you how many objects
@@ -378,7 +378,7 @@ were detected and how many survived. Write the numbers down.
 Then look at the two segmentation maps side by side:
 
 ```bash
-ds9 check/seg_loose.fits check/seg_strict.fits \
+ds9 seg_loose.fits seg_strict.fits \
     -lock frame image -tile
 ```
 
