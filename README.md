@@ -452,10 +452,12 @@ travel *inside the catalog*.
 You also need: positions, `FLUX_RADIUS`, one aperture flux and its error, `ELONGATION`,
 `SNR_WIN`, and `FLAGS`.
 
-Impoirntante la apertura que escogas deve ser A FIXED aperture, not Kron, you want something that does not depend on the measured morphology. por ejemplo uysar unba partera de 3". 
+Impoirntante la apertura que escogas deve ser A FIXED aperture, not Kron, you want something that does not depend on the measured morphology. por ejemplo uysar unba partera de 3".
 
 Look at `psfex -dd` and find `PHOTFLUX_KEY`. **Whatever you name in your `.param` must
 match what PSFEx expects to read.** If they disagree, PSFEx dies with an unhelpful error.
+
+Corre sextractor pidiendote que te de un catalogfo con el que va a fundionar psfex, por ejemplo prepsfex.cat
 
 ### 7b · Pass 1
 
@@ -481,10 +483,8 @@ Edit `config/default.psfex`. The parameters that matter:
 | `SAMPLE_FWHMRANGE` | which FWHM counts as a star | **in PIXELS.** Does your seeing fall inside it? |
 | `SAMPLE_MINSNR` | how faint a star can be | faint stars → noisy PSF |
 | `SAMPLE_MAXELLIP` | how elongated | this is your anti-galaxy filter |
-| `SAMPLE_FLAGMASK` | which FLAGS to reject | **a saturated star has a flat core. If it gets in, your PSF is a lie.** |
 
 ```bash
-psfex prepsfex.cat -c config/default.psfex
 ```
 
 ### 7d · Read the output. Do not skip this.
