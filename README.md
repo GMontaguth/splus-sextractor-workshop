@@ -287,7 +287,7 @@ in the parentheses must match how many values you put in `PHOT_APERTURES`.**
 `PHOT_APERTURES` is a **diameter in pixels**. If you want a 3″ aperture:
 `3 / 0.55 = 5.45 px`.
 
-Por ahora esas basicas funciona para crear un primer catalogo basico que luego vamos a usar pra buscar las PSFs de nuestras imagenes, pero ten encunta esto en el futuo para crear el catalogo oficial 
+Por ahora esas basicas funciona para crear un primer catalogo basico solo para entender y escoger nuestra mejor configuracion, pero ten encunta esto en el futuo para crear el catalogo oficial 
 
 > Stuck on which columns exist? Run `sex -dd` — the full parameter list is in there,
 > commented, with a one-line description of each. And `solutions/default.param` has a
@@ -413,7 +413,11 @@ measure — which is the whole point.)
 
 ---
 
+Una vez encuntres tus parametyros ideales para estos tres cambialos direc6amente en default.sex para no tener que estar cambaindo ese valor en el resto del tutorial.
+
 ## 7 · PSFEx
+
+Como mencionamos en el curso la determiancion de una buena psf es funcamental para terner una buena separacion entre una fuente extendiada de una puntual, a demas de permiter tener uan abuena aparetura psf para medir lka magnitud de estrellas. En el caso de las sepracion entre esterlla y galaxias renemos estas dos posiones:  
 
 `CLASS_STAR` is a neural network. It works — until the S/N drops, and then it collapses
 toward 0.5. It stops knowing, and it does not tell you.
@@ -447,6 +451,8 @@ travel *inside the catalog*.
 
 You also need: positions, `FLUX_RADIUS`, one aperture flux and its error, `ELONGATION`,
 `SNR_WIN`, and `FLAGS`.
+
+Impoirntante la apertura que escogas deve ser A FIXED aperture, not Kron, you want something that does not depend on the measured morphology. por ejemplo uysar unba partera de 3". 
 
 Look at `psfex -dd` and find `PHOTFLUX_KEY`. **Whatever you name in your `.param` must
 match what PSFEx expects to read.** If they disagree, PSFEx dies with an unhelpful error.
