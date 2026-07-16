@@ -70,7 +70,7 @@ for you).
 ### The zero points
 
 You will need these when you measure magnitudes. **They are NOT a single number** — in
-iDR6 the ZP is a spatial model that varies across the tile. Below is the median and the
+iDR6 the ZP is a spatial model that varies across the field. Below is the median and the
 scatter of that variation:
 
 | band | median ZP | std (spatial scatter) |
@@ -204,7 +204,7 @@ source, the source you are looking for *is the PSF*.
 ## 3 · The zero point
 
 You already saw the zero points in section 0. **The S-PLUS iDR6 zero point is not a
-number — it is a spatial model that varies across the tile.** The table gave you the
+number — it is a spatial model that varies across the field.** The table gave you the
 median and the scatter (`std`) of that variation.
 
 Look at the `std` column again and decide:
@@ -213,6 +213,11 @@ Look at the `std` column again and decide:
 - Is the answer the same in `u` (std 0.035) as it is in `r` (std 0.013)?
 
 **Whatever you decide, you must be able to defend it.** Write it down.
+
+Since this is a hands-on exercise to understand how the tool works, **for today we will
+use the median zero point for each image.** But keep in mind that this is an
+approximation — the real ZP varies across the field, and a science-grade measurement
+would need to account for that.
 
 > SExtractor does **not** compute zero points. It only applies them:
 > `MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT`.

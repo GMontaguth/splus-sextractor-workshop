@@ -70,7 +70,7 @@ resuelto para ti).
 ### Los zero points
 
 Los vas a necesitar para medir magnitudes. **No son un solo número** — en iDR6 el ZP es
-un modelo espacial que varía a través del tile. Abajo está la mediana y la dispersión de
+un modelo espacial que varía a través del campo. Abajo está la mediana y la dispersión de
 esa variación:
 
 | banda | ZP mediano | std (dispersión espacial) |
@@ -204,7 +204,7 @@ detección. Y para una fuente puntual, la fuente que buscas *es la PSF*.
 ## 3 · El zero point
 
 Ya viste los zero points en la sección 0. **El zero point de S-PLUS iDR6 no es un número
-— es un modelo espacial que varía a través del tile.** La tabla te dio la mediana y la
+— es un modelo espacial que varía a través del campo.** La tabla te dio la mediana y la
 dispersión (`std`) de esa variación.
 
 Mira la columna `std` de nuevo y decide:
@@ -213,6 +213,11 @@ Mira la columna `std` de nuevo y decide:
 - ¿La respuesta es la misma en `u` (std 0.035) que en `r` (std 0.013)?
 
 **Sea lo que decidas, tienes que poder defenderlo.** Anótalo.
+
+Como este es un ejercicio práctico para entender cómo funciona la herramienta, **por hoy
+usaremos el zero point mediano para cada imagen.** Pero ten en cuenta que es una
+aproximación — el ZP real varía a través del campo, y una medición de calidad científica
+tendría que tomar eso en cuenta.
 
 > SExtractor **no** calcula zero points. Solo los aplica:
 > `MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT`.

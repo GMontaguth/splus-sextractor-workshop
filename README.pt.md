@@ -70,7 +70,7 @@ para você).
 ### Os zero points
 
 Você vai precisar deles para medir magnitudes. **Não são um único número** — no iDR6 o ZP
-é um modelo espacial que varia ao longo do tile. Abaixo estão a mediana e o espalhamento
+é um modelo espacial que varia ao longo do campo. Abaixo estão a mediana e o espalhamento
 dessa variação:
 
 | banda | ZP mediano | std (espalhamento espacial) |
@@ -205,7 +205,7 @@ fonte pontual, a fonte que você procura *é a PSF*.
 ## 3 · O zero point
 
 Você já viu os zero points na seção 0. **O zero point do S-PLUS iDR6 não é um número — é
-um modelo espacial que varia ao longo do tile.** A tabela te deu a mediana e o
+um modelo espacial que varia ao longo do campo.** A tabela te deu a mediana e o
 espalhamento (`std`) dessa variação.
 
 Olhe a coluna `std` de novo e decida:
@@ -214,6 +214,11 @@ Olhe a coluna `std` de novo e decida:
 - A resposta é a mesma em `u` (std 0.035) e em `r` (std 0.013)?
 
 **Seja o que você decidir, você precisa conseguir defender.** Anote.
+
+Como este é um exercício prático para entender como a ferramenta funciona, **por hoje
+usaremos o zero point mediano para cada imagem.** Mas tenha em mente que isso é uma
+aproximação — o ZP real varia ao longo do campo, e uma medição de qualidade científica
+precisaria levar isso em conta.
 
 > O SExtractor **não** calcula zero points. Ele só os aplica:
 > `MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT`.
