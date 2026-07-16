@@ -192,12 +192,21 @@ This prints the keywords you need. Write down the four that matter:
 FWHM [px] = FWHMMEAN ["] / 0.55 ["/px]
 ```
 
-Now look at the kernel names — `gauss_2.0_5x5.conv`, `gauss_4.0_7x7.conv`. **The number
-is the FWHM in pixels.** Pick the one closest to yours.
+Now look at the kernel names — `gauss_2.0_5x5.conv`, `gauss_2.5_5x5.conv`. **The number
+is the FWHM in pixels.** Pick the one closest to yours escoge el que mejor se adapte a l9os tres filtros.
 
 Why? Convolution before detection is a **matched filter**: if the kernel has the shape
 of the source you are looking for, you maximise the detection S/N. And for a point
 source, the source you are looking for *is the PSF*.
+
+Ahora abre el archivo y cambiamos los parametros deacurdo a lo que acabaste de encontrar para el filtro R que va se nuestro filtro estandar porque es el que mejor señal ruido tiene, puedes simplemente ir a la carpeta config y abrir el archivo o puedes escrivir el la terminal:
+
+
+```
+> gedit config/default.sex & 
+```
+
+Recuerden agregarle el camino a donde estan los archivos de configuracion como PARAMETERS_NAME, FILTER_NAME, STARNNW_NAME por ejemplo: STARNNW_NAM  config/default.nnw
 
 ---
 
@@ -207,12 +216,10 @@ You already saw the zero points in section 0. **The S-PLUS iDR6 zero point is no
 number — it is a spatial model that varies across the field.** The table gave you the
 median and the scatter (`std`) of that variation.
 
-Look at the `std` column again and decide:
+Look at the `std` column again and pienda:
 
 - Is a single median ZP good enough for what you are doing?
 - Is the answer the same in `u` (std 0.035) as it is in `r` (std 0.013)?
-
-**Whatever you decide, you must be able to defend it.** Write it down.
 
 Since this is a hands-on exercise to understand how the tool works, **for today we will
 use the median zero point for each image.** But keep in mind that this is an
@@ -280,6 +287,8 @@ in the parentheses must match how many values you put in `PHOT_APERTURES`.**
 `PHOT_APERTURES` is a **diameter in pixels**. If you want a 3″ aperture:
 `3 / 0.55 = 5.45 px`.
 
+Por ahora esas basicas funciona para crear un primer catalogo basico que luego vamos a usar pra buscar las PSFs de nuestras imagenes, pero ten encunta esto en el futuo para crear el catalogo oficial 
+
 > Stuck on which columns exist? Run `sex -dd` — the full parameter list is in there,
 > commented, with a one-line description of each. And `solutions/default.param` has a
 > complete worked version if you need it.
@@ -288,14 +297,15 @@ in the parentheses must match how many values you put in `PHOT_APERTURES`.**
 
 ## 5 · Your first run
 
-Now edit `config/default.sex` with everything you worked out above, and run:
+Now edit `config/default.sex` with everything you worked out above, ademas como queremos ver que tambien funciona queremos ver como es la imagen del cielo y cuales son las funtes que esta identificamods vamos a pedsir dos imagenes de chequeo 
+que son la imagen de segmentacuon y backgroup vamnos a pedirle a sextractor que dos de las dops uamghenes para esto busca el CHECKIMAGE_TYPE y coloca las dos obciones y en CHECKIMAGE_NAME va el nombre de las dos imagenes fits que queres.
 
-```bash
+ahora si podemos correr sextractor, este catalo que llamaremos r_first.cat, estos cataklogos simplemente son para explorar los parametros de sextractor, para corrrer escribimos esto en la termianal: 
+
+```
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -CATALOG_NAME cat/r_first.cat \
     -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION,BACKGROUND \
-    -CHECKIMAGE_NAME check/seg.fits,check/bkg.fits
 ```
 
 **Note:** anything in the config file can be overridden on the command line with
