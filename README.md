@@ -139,7 +139,7 @@ Copy what you need into `config/`:
 ```bash
 cp <path>/default.nnw          config/
 cp <path>/gauss_2.0_5x5.conv   config/
-cp <path>/gauss_4.0_7x7.conv   config/     # you may want this one later
+cp <path>/gauss_2.5_5x5.conv   config/     # you may want this one later
 ```
 
 **What each file is for:**
