@@ -327,7 +327,7 @@ should be. That is the moment where "1.5 sigma" becomes a concrete number of cou
 ### Now LOOK at it. This is not optional.
 
 ```bash
-ds9 data/HYDRA_D_0003_R.fits check/seg.fits check/bkg.fits \
+ds9 data/HYDRA_D_0003_R.fits seg.fits bkg.fits \
     -zscale -lock frame image -lock scale yes -tile
 ```
 
