@@ -304,7 +304,7 @@ ahora si podemos correr sextractor, este catalo que llamaremos r_first.cat, esto
 
 ```
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
-    -CATALOG_NAME cat/r_first.cat \
+    -CATALOG_NAME r_first.cat \
     -CATALOG_TYPE FITS_1.0 \
 ```
 
