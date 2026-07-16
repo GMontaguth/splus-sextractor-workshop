@@ -354,7 +354,7 @@ have to edit a file to try a value.
 
 ### 6a · `DETECT_THRESH` and `DETECT_MINAREA`
 
-Run **at least three combinations of your own choosing.** For example, a loose one:
+Run **at least three combinations of your own choosing.** Para esto puedes cambiar los archivo directamente en el arvivo de default.sex o puedes indicar en la termianal los parametros del archivo de  configuracion que quieres cambiar. For example, a loose one:
 
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
