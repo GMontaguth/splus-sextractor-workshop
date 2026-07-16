@@ -395,15 +395,15 @@ Run the same field twice, changing only `DEBLEND_MINCONT`:
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DEBLEND_MINCONT 0.0001 \
-    -CATALOG_NAME cat/deb_aggressive.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_aggressive.fits
+    -CATALOG_NAME deb_aggressive.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_aggressive.fits
 ```
 
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DEBLEND_MINCONT 0.1 \
-    -CATALOG_NAME cat/deb_conservative.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_conservative.fits
+    -CATALOG_NAME deb_conservative.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_conservative.fits
 ```
 
 Look at the segmentation map around that galaxy both times. Zoom in.
