@@ -46,8 +46,7 @@ bash scripts/00_get_data.sh
 
 # or — download them one by one
 BASE=https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data
-wget $BASE/HYDRA_D_0003_U.fits
-wget $BASE/HYDRA_D_0003_U.weight.fits
+
 wget $BASE/HYDRA_D_0003_G.fits
 wget $BASE/HYDRA_D_0003_G.weight.fits
 wget $BASE/HYDRA_D_0003_R.fits
@@ -56,8 +55,6 @@ cd ..
 ```
 
 You can also just click them in the browser:
-[U](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.fits) ·
-[U weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.weight.fits) ·
 [G](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.fits) ·
 [G weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.weight.fits) ·
 [R](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_R.fits) ·
@@ -75,7 +72,6 @@ scatter of that variation:
 
 | band | median ZP | std (spatial scatter) |
 |---|---|---|
-| `u` | 20.054 | **0.035** |
 | `g` | 22.920 | 0.012 |
 | `r` | 22.784 | 0.013 |
 
@@ -150,6 +146,12 @@ cp <path>/gauss_2.5_5x5.conv   config/     # you may want this one later
 | `default.param` | **which columns you want in the output** | **always** |
 | `*.conv` | the filtering kernel | you *choose* one, you don't edit it |
 | `default.nnw` | the trained neural net behind `CLASS_STAR` | never |
+
+una cosa que se le debe agregar porque algunas veces no viene po defecto en default.sex son los parametros de la imagen de peso, asi qdentro de este texto debemos agrgar esto:
+
+#-------------------weight------------------
+WEIGHT_TYPE MAP_WEIGHT 
+WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits
 
 ### Where PSFEx keeps its defaults
 
@@ -520,28 +522,47 @@ Copy your science `.param`, add `SPREAD_MODEL`, `SPREADERR_MODEL`, `MAG_PSF`,
 
 **This will be slow.** For every source, SExtractor now evaluates the polynomial to build
 the PSF at that position, then does an iterative fit. That is why it costs what it costs.
-
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME final.cat \
+    -CATALOG_TYPE FITS_1.0 \
+    -PARAMETERS_NAME config/final.param \
+    -PSF_NAME prepsfex.psf \
+    -FILTER_NAME config/gauss_2.0_5x5.conv \
+    -STARNNW_NAME config/default.nnw \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits
+```
 ---
 
-## 8 · Three bands — and the mistake you are about to make
+## 8 · Two bands — and the mistake you are about to make
 
-Now do `u`, `g`, `r`.
+Vamos hacer un experimento rapido, normalmente cunado queremos un cataologo que caracterize estrellas como galaxias por lo que el jeito mas adecuado sea usando la psf para poder caracteizar pero demora como ya devieron, vamos hacer una roda rapida con dos filtros para enteder como se trabaja cundo tenemos varios filtros porque usalmente no trabajamos con un filtro solo, hay dos maneras de generar catalogos que seria la manera inconrrecta y la correcta:
+
 
 ### The wrong way (do it anyway — you need to see it break)
 
-Run SExtractor **three times, independently**, once per band. Each band detects and
-measures on its own. Use the zero point for that band (from the table in section 0):
+Run SExtractor **two times, independently**, once per band. Each band detects and
+measures on its own. Para este casoi es suficiente solo con la paertura auto pudeden elimiar las otras aperturas. Use the zero point for that band (from the table in section 0):
 
 ```bash
-sex data/HYDRA_D_0003_U.fits -c config/default.sex \
-    -CATALOG_NAME cat/single_U.cat -CATALOG_TYPE FITS_1.0 \
-    -MAG_ZEROPOINT <ZP_U> \
-    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_U.weight.fits
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME single_R.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_R> \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits
 ```
 
-Repeat for `G` and `R`, changing the band letter and the zero point each time.
-Then you have to cross-match the three catalogs by position and compute colours — which
-is exactly the problem.
+Recuerda que en de parametro de defauld escribimos GAIN, SATUR_LEVEL y SEEING_FWHM para el filtro R entonces hay que cambiarlos para el filtro G
+
+```bash
+sex data/HYDRA_D_0003_G.fits -c config/default.sex \
+    -CATALOG_NAME single_G.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT <ZP_G> \
+    -GAIN <G> \
+    -SATUR_LEVEL <G> \
+    -SEEING_FWHM <G> \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_G.weight.fits 
+```
+Vamos a ver los dos catalogos con topcat, que ven? Son iaguiales?
 
 ### The right way: dual-image mode
 
@@ -557,19 +578,11 @@ Detect on `r` — it is deep and has the best seeing. Then measure through *thos
 apertures*, at *those same positions*, in all three bands. So you run it three times, and
 the **first** image is always `r`:
 
-```bash
-# detect on R, measure on U
-sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_U.fits -c config/default.sex \
-    -CATALOG_NAME cat/dual_U.cat -CATALOG_TYPE FITS_1.0 \
-    -MAG_ZEROPOINT <ZP_U> \
-    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
-    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_U.weight.fits
-```
 
 ```bash
 # detect on R, measure on G
 sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_G.fits -c config/default.sex \
-    -CATALOG_NAME cat/dual_G.cat -CATALOG_TYPE FITS_1.0 \
+    -CATALOG_NAME dual_G.cat -CATALOG_TYPE FITS_1.0 \
     -MAG_ZEROPOINT <ZP_G> \
     -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
     -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_G.weight.fits
@@ -578,7 +591,7 @@ sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_G.fits -c config/default.sex \
 ```bash
 # detect on R, measure on R (yes, R on itself)
 sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_R.fits -c config/default.sex \
-    -CATALOG_NAME cat/dual_R.cat -CATALOG_TYPE FITS_1.0 \
+    -CATALOG_NAME dual_R.cat -CATALOG_TYPE FITS_1.0 \
     -MAG_ZEROPOINT <ZP_R> \
     -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
     -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_R.weight.fits
@@ -603,70 +616,8 @@ There is nothing to cross-match.
 
 **Same aperture, same position, every band. Without that, there is no colour.**
 
----
+Revisemos los catlogos con topcat de nuevo, que ven? ahora son iguales?
 
-## 9 · The deliverable
-
-Make the colour–colour diagram — `(u−g)` vs `(g−r)` — **twice**: once from your
-dual-mode catalogs, once from the band-by-band catalogs. This one script reads both sets
-and plots them side by side:
-
-```bash
-python3 scripts/02_color_color.py
-```
-
-Colour the points by `SPREAD_MODEL`.
-
-**Look at the two diagrams.** The stellar locus is wider in one of them. That extra
-scatter is not photometric noise. **It is your apertures disagreeing with each other.**
-
-Nothing crashed. Both catalogs look perfectly respectable in TOPCAT.
-
-One of them just has colours that mean nothing.
-
----
-
-## 10 · Optional — if you finished early
-
-You made your colour–colour diagram with `MAG_APER`, not `MAG_PSF`. That was
-deliberate: `MAG_PSF` is only valid for **point sources**, and your diagram has
-galaxies in it. Fitting a PSF to a galaxy gives you a meaningless number.
-
-So when *is* `MAG_PSF` worth the trouble? This experiment answers that, on stars.
-
-```bash
-python3 scripts/03_psf_vs_aper.py
-```
-
-For an **isolated** star, `MAG_APER` and `MAG_PSF` agree — a star *is* the PSF, so
-integrating a fixed aperture and fitting the PSF give the same flux.
-
-For a star with a close **neighbour**, they diverge. The fixed aperture happily
-collects the neighbour's light too, so `MAG_APER` comes out too bright. The PSF fit
-knows what a star is shaped like and is not fooled.
-
-**That is the entire reason PSF photometry exists: crowded fields.** Not for the
-isolated stars — for the crowded ones.
-
----
-
-## What to hand in
-
-1. **Your `default.sex`**, with a short justification for each parameter you changed
-   from the default. *"Why did you pick that `BACK_SIZE`?"* is a fair question.
-
-2. **Your final catalog** (`.fits`), with the three bands measured through identical
-   apertures.
-
-3. **Two figures:**
-   - the colour–colour diagram, coloured by `SPREAD_MODEL`
-   - one diagnostic of your own choosing that convinced you something was working (or
-     wasn't)
-
-4. **Two sentences on what went wrong and how you diagnosed it.**
-
-**Point 4 is the one I actually grade.** Everything else can be produced by copying
-commands. Point 4 cannot.
 
 ---
 
