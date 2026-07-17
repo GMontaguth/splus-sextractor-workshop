@@ -12,7 +12,7 @@ Gissel Montaguth
 
 ## O que você vai fazer hoje
 
-Você vai construir um catálogo fotométrico de um campo real do S-PLUS, em três bandas, e
+Você vai construir um catálogo fotométrico de um campo real do S-PLUS, em duas bandas, e
 vai usá-lo para separar estrelas de galáxias.
 
 Mas esse não é bem o ponto. O ponto é este:
@@ -35,10 +35,10 @@ Clone o repositório (código + configs), e depois baixe as imagens do
 ```bash
 git clone https://github.com/GMontaguth/splus-sextractor-workshop.git
 cd splus-sextractor-workshop
-mkdir -p data && cd data
+mkdir -p data
 ```
 
-Baixe os seis arquivos FITS, com o script ou à mão:
+Baixe os quatro arquivos FITS, com o script ou à mão:
 
 ```bash
 # ou — rode o auxiliar
@@ -46,8 +46,7 @@ bash scripts/00_get_data.sh
 
 # ou — baixe um por um
 BASE=https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data
-wget $BASE/HYDRA_D_0003_U.fits
-wget $BASE/HYDRA_D_0003_U.weight.fits
+cd data
 wget $BASE/HYDRA_D_0003_G.fits
 wget $BASE/HYDRA_D_0003_G.weight.fits
 wget $BASE/HYDRA_D_0003_R.fits
@@ -56,8 +55,6 @@ cd ..
 ```
 
 Você também pode clicar pelo navegador:
-[U](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.fits) ·
-[U weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_U.weight.fits) ·
 [G](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.fits) ·
 [G weight](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_G.weight.fits) ·
 [R](https://github.com/GMontaguth/splus-sextractor-workshop/releases/download/v1.0-data/HYDRA_D_0003_R.fits) ·
@@ -75,13 +72,12 @@ dessa variação:
 
 | banda | ZP mediano | std (espalhamento espacial) |
 |---|---|---|
-| `u` | 20.054 | **0.035** |
 | `g` | 22.920 | 0.012 |
 | `r` | 22.784 | 0.013 |
 
-Use a mediana como seu `MAG_ZEROPOINT`. Mas **olhe essa coluna `std` e pense.** O
-espalhamento em `u` é quase três vezes o de `g` e `r`. A mediana é uma aproximação segura
-em todas as bandas? Saiba dizer por quê.
+Use a mediana como seu `MAG_ZEROPOINT`. Mas **olhe essa coluna `std` e pense.** Ela te
+diz o quanto o ZP varia ao longo do campo. A mediana é uma aproximação segura? Saiba dizer
+por quê.
 
 > O SExtractor **não** calcula zero points. Ele só os aplica:
 > `MAG = -2.5 log10(FLUX) + MAG_ZEROPOINT`. Esse número veio de um pipeline de calibração
@@ -130,7 +126,7 @@ O SExtractor precisa de mais três arquivos, e eles vêm com a instalação.
 # se você instalou via apt:
 dpkg -L source-extractor | grep -E "\.param|\.conv|\.nnw"
 
-# se compilou ou usou conda, tente:
+# se compilou, usou conda, ou carregou um módulo, tente:
 find / -name "default.nnw" 2>/dev/null
 find / -name "*.conv" 2>/dev/null | head
 ```
@@ -140,7 +136,7 @@ Copie o que precisar para `config/`:
 ```bash
 cp <caminho>/default.nnw          config/
 cp <caminho>/gauss_2.0_5x5.conv   config/
-cp <caminho>/gauss_4.0_7x7.conv   config/     # talvez você queira depois
+cp <caminho>/gauss_2.5_5x5.conv   config/     # talvez você queira depois
 ```
 
 **Para que serve cada arquivo:**
@@ -151,6 +147,20 @@ cp <caminho>/gauss_4.0_7x7.conv   config/     # talvez você queira depois
 | `default.param` | **quais colunas você quer na saída** | **sempre** |
 | `*.conv` | o kernel de filtragem | você *escolhe* um, não edita |
 | `default.nnw` | a rede neural treinada do `CLASS_STAR` | nunca |
+
+### Uma coisa que você precisa adicionar à mão: o weight map
+
+Os parâmetros do weight map às vezes **não** vêm no `default.sex`. Abra o arquivo e
+adicione este bloco, para que o SExtractor use a imagem de peso:
+
+```
+#------------------------------- Weighting -----------------------------------
+WEIGHT_TYPE      MAP_WEIGHT
+WEIGHT_IMAGE     data/HYDRA_D_0003_R.weight.fits
+```
+
+Sem ele, o SExtractor assume ruído uniforme, e suas detecções nas bordas ruidosas do
+campo não são o que dizem ser.
 
 ### Onde o PSFEx guarda seus valores padrão
 
@@ -193,12 +203,34 @@ Isso imprime os keywords de que você precisa. Anote os quatro que importam:
 FWHM [px] = FWHMMEAN ["] / 0,55 ["/px]
 ```
 
-Agora olhe os nomes dos kernels — `gauss_2.0_5x5.conv`, `gauss_4.0_7x7.conv`. **O número
-é o FWHM em pixels.** Escolha o mais próximo do seu.
+Agora olhe os nomes dos kernels — `gauss_2.0_5x5.conv`, `gauss_2.5_5x5.conv`. **O número
+é o FWHM em pixels.** Escolha o que melhor se ajusta às suas duas bandas.
 
 Por quê? A convolução antes da detecção é um **filtro casado (matched filter)**: se o
 kernel tem a forma da fonte que você procura, você maximiza o S/N de detecção. E para uma
 fonte pontual, a fonte que você procura *é a PSF*.
+
+### Agora coloque seus valores no `default.sex`
+
+Vamos usar **r como nossa banda de referência** — é profunda e tem o melhor
+sinal-ruído, então é a que usamos para detectar.
+
+Abra a config e defina os valores que você acabou de encontrar. Você pode abrir
+`config/default.sex` no seu editor, ou pelo terminal:
+
+```bash
+gedit config/default.sex &
+```
+
+Defina `SEEING_FWHM`, `SATUR_LEVEL`, `GAIN`, `PIXEL_SCALE` e o seu `FILTER_NAME`
+escolhido.
+
+**E lembre de dar o caminho** para seus arquivos de configuração — `PARAMETERS_NAME`,
+`FILTER_NAME`, `STARNNW_NAME`. Por exemplo:
+
+```
+STARNNW_NAME     config/default.nnw
+```
 
 ---
 
@@ -208,12 +240,10 @@ Você já viu os zero points na seção 0. **O zero point do S-PLUS iDR6 não é
 um modelo espacial que varia ao longo do campo.** A tabela te deu a mediana e o
 espalhamento (`std`) dessa variação.
 
-Olhe a coluna `std` de novo e decida:
+Olhe a coluna `std` de novo e pense:
 
 - Um único ZP mediano é suficiente para o que você está fazendo?
-- A resposta é a mesma em `u` (std 0.035) e em `r` (std 0.013)?
-
-**Seja o que você decidir, você precisa conseguir defender.** Anote.
+- O espalhamento é o mesmo em todas as bandas?
 
 Como este é um exercício prático para entender como a ferramenta funciona, **por hoje
 usaremos o zero point mediano para cada imagem.** Mas tenha em mente que isso é uma
@@ -281,6 +311,10 @@ entre parênteses tem que bater com quantos valores você pôs em `PHOT_APERTURE
 `PHOT_APERTURES` é um **diâmetro em pixels**. Se você quer uma abertura de 3″:
 `3 / 0,55 = 5,45 px`.
 
+Por enquanto essas colunas básicas bastam para criar um primeiro catálogo — só para
+entender a ferramenta e escolher sua melhor configuração. Tenha a lista mais completa em
+mente para o futuro, quando você construir o catálogo *oficial*.
+
 > Travado em quais colunas existem? Rode `sex -dd` — a lista completa de parâmetros está
 > lá, comentada, com uma descrição de uma linha de cada uma. E `solutions/default.param`
 > tem uma versão resolvida completa se você precisar.
@@ -289,19 +323,25 @@ entre parênteses tem que bater com quantos valores você pôs em `PHOT_APERTURE
 
 ## 5 · Sua primeira execução
 
-Agora edite `config/default.sex` com tudo que você descobriu, e rode:
+Agora edite `config/default.sex` com tudo que você descobriu acima.
+
+Além disso, como queremos ver que funciona, queremos ver como é a imagem do céu e quais
+são as fontes que estamos identificando. Vamos pedir duas **imagens de checagem**: a
+imagem de segmentação e o background. Procure `CHECKIMAGE_TYPE` e coloque as duas opções
+ali, e em `CHECKIMAGE_NAME` vão os nomes das duas imagens FITS que você quer.
+
+Agora podemos rodar o SExtractor. Este catálogo — que chamaremos de `r_first.cat` — é só
+para explorar os parâmetros. Digite isto no terminal:
 
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
-    -CATALOG_NAME cat/r_first.cat \
-    -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION,BACKGROUND \
-    -CHECKIMAGE_NAME check/seg.fits,check/bkg.fits
+    -CATALOG_NAME r_first.cat \
+    -CATALOG_TYPE FITS_1.0
 ```
 
 **Nota:** qualquer coisa no arquivo de config pode ser sobrescrita na linha de comando
-com `-PARAM valor`. Não é uma comodidade — é o que torna viável rodar doze bandas com uma
-única config.
+com `-PARAM valor`. Não é uma comodidade — é o que torna viável rodar muitas bandas com
+uma única config.
 
 ### Funcionou?
 
@@ -318,7 +358,7 @@ Deveria ser. Esse é o momento em que "1,5 sigma" vira um número concreto de co
 ### Agora OLHE. Isto não é opcional.
 
 ```bash
-ds9 data/HYDRA_D_0003_R.fits check/seg.fits check/bkg.fits \
+ds9 data/HYDRA_D_0003_R.fits seg.fits bkg.fits \
     -zscale -lock frame image -lock scale yes -tile
 ```
 
@@ -345,13 +385,15 @@ arquivo para testar um valor.
 
 ### 6a · `DETECT_THRESH` e `DETECT_MINAREA`
 
-Rode **pelo menos três combinações escolhidas por você.** Por exemplo, uma frouxa:
+Rode **pelo menos três combinações escolhidas por você.** Para isso você pode mudar os
+valores diretamente no `default.sex`, ou indicar no terminal os parâmetros do arquivo de
+configuração que você quer mudar. Por exemplo, uma frouxa:
 
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DETECT_THRESH 1.5 -DETECT_MINAREA 3 \
-    -CATALOG_NAME cat/thresh_loose.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_loose.fits
+    -CATALOG_NAME thresh_loose.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_loose.fits
 ```
 
 e uma estrita:
@@ -359,8 +401,8 @@ e uma estrita:
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DETECT_THRESH 3.0 -DETECT_MINAREA 5 \
-    -CATALOG_NAME cat/thresh_strict.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_strict.fits
+    -CATALOG_NAME thresh_strict.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_strict.fits
 ```
 
 Para cada execução, **leia a última linha que o SExtractor imprime** — ela te diz quantos
@@ -369,7 +411,7 @@ objetos foram detectados e quantos sobreviveram. Anote os números.
 Depois olhe os dois segmentation maps lado a lado:
 
 ```bash
-ds9 check/seg_loose.fits check/seg_strict.fits \
+ds9 seg_loose.fits seg_strict.fits \
     -lock frame image -tile
 ```
 
@@ -387,15 +429,15 @@ Rode o mesmo campo duas vezes, mudando só `DEBLEND_MINCONT`:
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DEBLEND_MINCONT 0.0001 \
-    -CATALOG_NAME cat/deb_aggressive.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_aggressive.fits
+    -CATALOG_NAME deb_aggressive.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_aggressive.fits
 ```
 
 ```bash
 sex data/HYDRA_D_0003_R.fits -c config/default.sex \
     -DEBLEND_MINCONT 0.1 \
-    -CATALOG_NAME cat/deb_conservative.cat -CATALOG_TYPE FITS_1.0 \
-    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME check/seg_conservative.fits
+    -CATALOG_NAME deb_conservative.cat -CATALOG_TYPE FITS_1.0 \
+    -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME seg_conservative.fits
 ```
 
 Olhe o segmentation map ao redor dessa galáxia nas duas vezes. Dê zoom.
@@ -405,7 +447,16 @@ que é justamente o ponto.)
 
 ---
 
+Assim que você encontrar os parâmetros com os quais está satisfeito para estes, defina-os
+**diretamente no `default.sex`**, para não ter que ficar passando-os na linha de comando
+no resto do tutorial.
+
 ## 7 · PSFEx
+
+Como mencionamos no curso, a determinação de uma boa PSF é fundamental para ter uma boa
+separação entre uma fonte extensa e uma pontual — além de permitir ter uma boa abertura
+PSF para medir a magnitude das estrelas. Para a separação entre estrela e galáxia temos
+estas duas opções:
 
 `CLASS_STAR` é uma rede neural. Funciona — até o S/N cair, e aí ela colapsa em direção a
 0,5. Ela para de saber, e não te avisa.
@@ -440,22 +491,46 @@ os pixels precisam viajar *dentro do catálogo*.
 Você também precisa: posições, `FLUX_RADIUS`, um fluxo de abertura e seu erro,
 `ELONGATION`, `SNR_WIN`, e `FLAGS`.
 
+> **Importante:** a abertura que você escolher precisa ser uma **abertura FIXA, não
+> Kron** — você quer algo que não dependa da morfologia medida. Por exemplo, uma abertura
+> de 3″.
+
 Olhe `psfex -dd` e encontre `PHOTFLUX_KEY`. **O que você nomear no seu `.param` tem que
-bater com o que o PSFEx espera ler.** Se não baterem, o PSFEx morre com um erro pouco
-útil.
+bater com o que o PSFEx espera ler.** Se não baterem, o PSFEx morre com um erro pouco útil
+(normalmente um segmentation fault).
+
+Depois rode o SExtractor para produzir o catálogo com o qual o PSFEx vai funcionar —
+chame-o, por exemplo, de `prepsfex.cat`.
 
 ### 7b · Passo 1
 
 Duas coisas tornam esta execução diferente da científica:
 
-- `-CATALOG_TYPE FITS_LDAC` — **obrigatório.** O PSFEx não lê outra coisa.
+- `-CATALOG_TYPE FITS_LDAC` — **obrigatório.** O PSFEx não lê outra coisa. (Se você
+  esquecer, o PSFEx quebra com um segmentation fault e sem mensagem útil.)
 - um `DETECT_THRESH` **mais alto** — este não é o run científico. Para ajustar uma PSF
   você quer *estrelas boas*, não completeza. Tente 5σ.
 
 Além disso: se seu `.param` diz `FLUX_APER(1)`, então `PHOT_APERTURES` tem que ter
 **exatamente um** valor.
 
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME prepsfex.cat -CATALOG_TYPE FITS_LDAC \
+    -PARAMETERS_NAME config/prepsfex.param \
+    -DETECT_THRESH 5.0 -ANALYSIS_THRESH 5.0 -PHOT_APERTURES 10
+```
+
 Seu catálogo vai ser grande. São os recortes do `VIGNET`. Esperado.
+
+**Confira que ele realmente saiu como LDAC** antes de entregá-lo ao PSFEx:
+
+```bash
+python3 -c "from astropy.io import fits; print([h.name for h in fits.open('prepsfex.cat')])"
+```
+
+Você quer ver `LDAC_IMHEAD` e `LDAC_OBJECTS`. Se você vir um `OBJECTS` simples, o
+`-CATALOG_TYPE FITS_LDAC` não pegou — essa é a causa #1 do segfault.
 
 ### 7c · Rode o PSFEx
 
@@ -468,7 +543,6 @@ Edite `config/default.psfex`. Os parâmetros que importam:
 | `SAMPLE_FWHMRANGE` | qual FWHM conta como estrela | **em PIXELS.** Seu seeing cai dentro? |
 | `SAMPLE_MINSNR` | quão fraca uma estrela pode ser | estrelas fracas → PSF ruidosa |
 | `SAMPLE_MAXELLIP` | quão alongada | este é o seu filtro anti-galáxias |
-| `SAMPLE_FLAGMASK` | quais FLAGS rejeitar | **uma estrela saturada tem o núcleo achatado. Se entrar, sua PSF é mentira.** |
 
 ```bash
 psfex prepsfex.cat -c config/default.psfex
@@ -510,27 +584,56 @@ Copie seu `.param` científico, adicione `SPREAD_MODEL`, `SPREADERR_MODEL`, `MAG
 construir a PSF naquela posição, e faz um ajuste iterativo. É por isso que custa o que
 custa.
 
+```bash
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME final.cat \
+    -CATALOG_TYPE FITS_1.0 \
+    -PARAMETERS_NAME config/final.param \
+    -PSF_NAME prepsfex.psf \
+    -FILTER_NAME config/gauss_2.0_5x5.conv \
+    -STARNNW_NAME config/default.nnw \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits
+```
+
 ---
 
-## 8 · Três bandas — e o erro que você está prestes a cometer
+## 8 · Duas bandas — e o erro que você está prestes a cometer
 
-Agora faça `u`, `g`, `r`.
+Hora de um experimento rápido. Normalmente, quando queremos um catálogo que caracterize
+estrelas e galáxias, a forma mais limpa é usar a PSF — mas como você acabou de ver, é
+lenta. Então vamos fazer uma rodada rápida com **dois filtros**, para entender como se
+trabalha quando você tem mais de uma banda, porque quase nunca trabalhamos com um único
+filtro.
+
+Há duas maneiras de gerar os catálogos: a maneira **errada** e a **certa**.
 
 ### O jeito errado (faça mesmo assim — você precisa ver quebrar)
 
-Rode o SExtractor **três vezes, independentes**, uma por banda. Cada banda detecta e mede
-por conta própria. Use o zero point daquela banda (da tabela na seção 0):
+Rode o SExtractor **duas vezes, independentes**, uma por banda. Cada banda detecta e mede
+por conta própria. Para este experimento, a abertura `AUTO` sozinha basta — você pode
+remover as outras aberturas. Use o zero point daquela banda (da tabela na seção 0):
 
 ```bash
-sex data/HYDRA_D_0003_U.fits -c config/default.sex \
-    -CATALOG_NAME cat/single_U.cat -CATALOG_TYPE FITS_1.0 \
-    -MAG_ZEROPOINT <ZP_U> \
-    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_U.weight.fits
+sex data/HYDRA_D_0003_R.fits -c config/default.sex \
+    -CATALOG_NAME single_R.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT 22.784 \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits
 ```
 
-Repita para `G` e `R`, mudando a letra da banda e o zero point a cada vez.
-Depois você tem que cross-matchear os três catálogos por posição e calcular cores — que é
-justamente o problema.
+Lembre que no `default.sex` escrevemos `GAIN`, `SATUR_LEVEL` e `SEEING_FWHM` para o filtro
+**r** — então para **g** você tem que mudá-los:
+
+```bash
+sex data/HYDRA_D_0003_G.fits -c config/default.sex \
+    -CATALOG_NAME single_G.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT 22.920 \
+    -GAIN <G_gain> \
+    -SATUR_LEVEL <G_satur> \
+    -SEEING_FWHM <G_seeing> \
+    -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE data/HYDRA_D_0003_G.weight.fits
+```
+
+Abra os dois catálogos no TOPCAT. O que você vê? São iguais?
 
 ### O jeito certo: modo dual
 
@@ -543,23 +646,14 @@ sex detection.fits,measurement.fits -c config/default.sex
 As fontes são **detectadas** na primeira imagem, **medidas** na segunda.
 
 Detecte em `r` — é profunda e tem o melhor seeing. Depois meça através *dessas mesmas
-aberturas*, *nessas mesmas posições*, nas três bandas. Então você roda três vezes, e a
+aberturas*, *nessas mesmas posições*, nas duas bandas. Então você roda duas vezes, e a
 **primeira** imagem é sempre `r`:
-
-```bash
-# detecta em R, mede em U
-sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_U.fits -c config/default.sex \
-    -CATALOG_NAME cat/dual_U.cat -CATALOG_TYPE FITS_1.0 \
-    -MAG_ZEROPOINT <ZP_U> \
-    -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
-    -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_U.weight.fits
-```
 
 ```bash
 # detecta em R, mede em G
 sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_G.fits -c config/default.sex \
-    -CATALOG_NAME cat/dual_G.cat -CATALOG_TYPE FITS_1.0 \
-    -MAG_ZEROPOINT <ZP_G> \
+    -CATALOG_NAME dual_G.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT 22.920 \
     -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
     -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_G.weight.fits
 ```
@@ -567,8 +661,8 @@ sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_G.fits -c config/default.sex \
 ```bash
 # detecta em R, mede em R (sim, R sobre si mesma)
 sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_R.fits -c config/default.sex \
-    -CATALOG_NAME cat/dual_R.cat -CATALOG_TYPE FITS_1.0 \
-    -MAG_ZEROPOINT <ZP_R> \
+    -CATALOG_NAME dual_R.cat -CATALOG_TYPE FITS_1.0 \
+    -MAG_ZEROPOINT 22.784 \
     -WEIGHT_TYPE MAP_WEIGHT,MAP_WEIGHT \
     -WEIGHT_IMAGE data/HYDRA_D_0003_R.weight.fits,data/HYDRA_D_0003_R.weight.fits
 ```
@@ -576,86 +670,22 @@ sex data/HYDRA_D_0003_R.fits,data/HYDRA_D_0003_R.fits -c config/default.sex \
 No modo dual, `WEIGHT_TYPE` e `WEIGHT_IMAGE` recebem **dois** valores separados por
 vírgula — um para a imagem de detecção, um para a de medição.
 
-Como todas as bandas foram detectadas em `r`, **a linha *i* é a mesma fonte nos três
+Como as duas bandas foram detectadas em `r`, **a linha *i* é a mesma fonte nos dois
 catálogos.** Não precisa cross-matchear. Esse é o ponto.
 
 ### Por que isto é o jogo inteiro
 
 A abertura de Kron é **adaptativa** — seu tamanho depende da forma medida *naquela
-imagem*. O seeing em `u` é pior, então a fonte parece mais gorda, então **a elipse sai
-maior**. Mais área, mais fluxo. Sua cor agora tem um viés que não tem nada a ver com a
-estrela.
+imagem*. O seeing em `g` é diferente, então a fonte pode parecer mais gorda, então **a
+elipse sai de um tamanho diferente**. Mais área, mais fluxo. Sua cor agora tem um viés que
+não tem nada a ver com a estrela.
 
-E é pior: uma fonte fraca detectada em `r` pode **não ser detectada em `u`**. Duas fontes
-separadas em `r` podem ser **um único blob** em `u`. Não há nada para cross-matchear.
+E é pior: uma fonte fraca detectada em `r` pode **não ser detectada em `g`**. Duas fontes
+separadas em `r` podem ser **um único blob** em `g`. Não há nada para cross-matchear.
 
 **Mesma abertura, mesma posição, cada banda. Sem isso, não há cor.**
 
----
-
-## 9 · O entregável
-
-Faça o diagrama cor-cor — `(u−g)` vs `(g−r)` — **duas vezes**: uma a partir dos seus
-catálogos de modo dual, outra a partir dos catálogos banda por banda. Este script lê os
-dois conjuntos e os plota lado a lado:
-
-```bash
-python3 scripts/02_color_color.py
-```
-
-Colora os pontos por `SPREAD_MODEL`.
-
-**Olhe os dois diagramas.** A sequência estelar é mais larga em um deles. Esse
-espalhamento extra não é ruído fotométrico. **São as suas aberturas discordando entre
-si.**
-
-Nada quebrou. Os dois catálogos parecem perfeitamente respeitáveis no TOPCAT.
-
-Um deles só tem cores que não significam nada.
-
----
-
-## 10 · Opcional — se você terminou cedo
-
-Você fez seu diagrama cor-cor com `MAG_APER`, não com `MAG_PSF`. Foi de propósito:
-`MAG_PSF` só é válido para **fontes pontuais**, e seu diagrama tem galáxias. Ajustar uma
-PSF a uma galáxia dá um número sem sentido.
-
-Então, *quando* `MAG_PSF` vale a pena? Este experimento responde, com estrelas.
-
-```bash
-python3 scripts/03_psf_vs_aper.py
-```
-
-Para uma estrela **isolada**, `MAG_APER` e `MAG_PSF` concordam — uma estrela *é* a PSF,
-então integrar uma abertura fixa e ajustar a PSF dão o mesmo fluxo.
-
-Para uma estrela com uma **vizinha** próxima, elas divergem. A abertura fixa recolhe
-também a luz da vizinha, então `MAG_APER` sai brilhante demais. O ajuste da PSF sabe qual
-é a forma de uma estrela e não se engana.
-
-**Essa é a razão inteira de a fotometria PSF existir: campos densos.** Não para as
-estrelas isoladas — para as aglomeradas.
-
----
-
-## O que entregar
-
-1. **Seu `default.sex`**, com uma justificativa curta para cada parâmetro que você mudou
-   do padrão. *"Por que você escolheu esse `BACK_SIZE`?"* é uma pergunta justa.
-
-2. **Seu catálogo final** (`.fits`), com as três bandas medidas através de aberturas
-   idênticas.
-
-3. **Duas figuras:**
-   - o diagrama cor-cor, colorido por `SPREAD_MODEL`
-   - um diagnóstico à sua escolha que te convenceu de que algo estava funcionando (ou
-     não)
-
-4. **Duas frases sobre o que deu errado e como você diagnosticou.**
-
-**O ponto 4 é o que eu de fato avalio.** Todo o resto pode ser produzido copiando
-comandos. O ponto 4 não.
+Abra os catálogos no TOPCAT de novo. O que você vê agora? São iguais?
 
 ---
 
