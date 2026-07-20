@@ -19,8 +19,6 @@ mkdir -p data
 cd data
 
 FILES=(
-    "HYDRA_D_0003_U.fits"
-    "HYDRA_D_0003_U.weight.fits"
     "HYDRA_D_0003_G.fits"
     "HYDRA_D_0003_G.weight.fits"
     "HYDRA_D_0003_R.fits"
