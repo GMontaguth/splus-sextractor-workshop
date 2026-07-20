@@ -82,7 +82,7 @@ echo
 echo "----------------------------------------------"
 echo " Data"
 echo "----------------------------------------------"
-for b in U G R; do
+for b in G R; do
     for suf in "" ".weight"; do
         f="data/HYDRA_D_0003_${b}${suf}.fits"
         if [ -f "$f" ]; then
