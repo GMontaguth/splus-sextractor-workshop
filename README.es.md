@@ -27,6 +27,79 @@ mayor parte de esta sesión.
 
 ---
 
+## Instalación
+
+Si SExtractor y PSFEx ya están disponibles en tu máquina (o vía `module load` en un
+cluster), sáltate esta sección. Si no, instálalos una vez antes de la sesión.
+
+### Paso 1 — Librerías del sistema
+
+```bash
+sudo apt-get update
+sudo apt-get install libcfitsio-dev                                # CFITSIO (lee FITS)
+sudo apt-get install libatlas-base-dev libblas-dev liblapack-dev   # ATLAS
+sudo apt-get install libfftw3-dev                                  # FFTW
+sudo apt-get install libplplot-dev                                 # PLPlot (plots de PSFEx)
+```
+
+### Paso 2 — SExtractor
+
+```bash
+git clone https://github.com/astromatic/sextractor.git
+cd sextractor
+sh autogen.sh
+./configure
+make -j
+sudo make install
+```
+
+Verifica:
+
+```bash
+sex --version
+```
+
+> **Si `./configure` se detiene con un error como** `CFITSIO include files not found` **(o
+> lo mismo para FFTW, ATLAS, PLPlot):** falta la librería correspondiente del Paso 1.
+> Instálala — para CFITSIO es `sudo apt-get install libcfitsio-dev` — y luego solo
+> vuelve a correr los últimos tres comandos:
+> ```bash
+> ./configure
+> make -j
+> sudo make install
+> ```
+> No necesitas clonar de nuevo. Repite hasta que `./configure` termine sin errores.
+
+**Alternativa (conda):**
+
+```bash
+conda install -c conda-forge astromatic-source-extractor
+```
+
+Ver https://anaconda.org/conda-forge/astromatic-source-extractor
+
+### Paso 3 — PSFEx
+
+```bash
+git clone https://github.com/astromatic/psfex.git
+cd psfex
+sh autogen.sh
+./configure
+make -j
+sudo make install
+```
+
+Verifica:
+
+```bash
+psfex --version
+```
+
+> Aplica la misma regla: si `./configure` se queja de una librería faltante, instálala y
+> vuelve a correr `./configure`, `make -j`, `sudo make install`.
+
+---
+
 ## 0 · Consigue los datos
 
 Clona el repositorio (código + configs), y luego descarga las imágenes del
