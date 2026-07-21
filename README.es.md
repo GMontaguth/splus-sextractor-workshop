@@ -413,7 +413,7 @@ Por ahora esas columnas básicas alcanzan para crear un primer catálogo — sol
 entender la herramienta y elegir tu mejor configuración. Ten en cuenta la lista más
 completa para el futuro, cuando armes el catálogo *oficial*.
 
-> ¿Atascado en qué columnas existen? Corre `sex -dd` — la lista completa de parámetros
+> ¿Atascado en qué columnas existen? Corre `sex -dp` — la lista completa de parámetros
 > está ahí, comentada, con una descripción de una línea de cada una. Y
 > `solutions/default.param` tiene una versión resuelta completa si la necesitas.
 
