@@ -8,6 +8,8 @@
 **Hands-on Activity 2 — S-PLUS School**
 Gissel Montaguth
 
+📄 **Lecture slides:** [Lecture4_COMPLETE.pdf](Lecture4_COMPLETE.pdf)
+
 ---
 
 ## What you will do today
