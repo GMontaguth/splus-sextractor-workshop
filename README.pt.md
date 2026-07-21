@@ -251,24 +251,49 @@ Leia também. É mais curto, e metade são opções de check-plots.
 ## 2 · Leia o header antes de escrever a config
 
 Metade dos parâmetros de `default.sex` não são escolhas livres — são fatos sobre a sua
-imagem. Vá buscá-los.
+imagem. Vá buscá-los no **header**.
+
+Você já sabe usar o DS9, então use-o: abra a imagem e vá em
+**File → Display Header** (ou o botão `Header` da barra). Percorra os keywords e encontre
+os quatro que importam. Você pode buscar o nome do keyword no texto do header.
 
 ```bash
-python3 scripts/01_read_header.py
+ds9 data/HYDRA_D_0003_R.fits &
+# depois: File → Display Header
 ```
 
-Isso imprime os keywords de que você precisa. Anote os quatro que importam:
+Prefere o terminal? Qualquer um destes imprime o header sem abrir um visualizador:
+
+```bash
+# com astropy
+python3 -c "from astropy.io import fits; fits.open('data/HYDRA_D_0003_R.fits').info(); print(repr(fits.getheader('data/HYDRA_D_0003_R.fits')))"
+
+# ou, se você tiver os utilitários FTOOLS / cfitsio
+fold data/HYDRA_D_0003_R.fits | head
+listhead data/HYDRA_D_0003_R.fits
+```
+
+> **Um detalhe:** nestes arquivos os dados (e os keywords úteis) podem estar na
+> **extensão 1**, não na 0. Se o header da primeira extensão parecer vazio, olhe a
+> próxima — no DS9 use o seletor de extensão/HDU; no astropy é
+> `fits.getheader('...', 1)`.
+
+Anote os quatro que importam:
 
 | Keyword do header | Vai em | Por quê |
 |---|---|---|
 | `FWHMMEAN` | `SEEING_FWHM` **e** sua escolha de `FILTER_NAME` | em arcsec |
 | `SATURATE` | `SATUR_LEVEL` | **o padrão é 50000. O seu não é.** |
-| `GAIN` | `GAIN` | |
+| `GAIN` | `GAIN` | elétrons por contagem |
 | escala de pixel | `PIXEL_SCALE` | S-PLUS: 0,55 ″/px |
 
 > ⚠️ **`SATUR_LEVEL` é o que as pessoas erram.** Se você deixar no padrão, estrelas
 > saturadas nunca são marcadas como saturadas, e `FLAGS = 4` nunca aparece no seu
 > catálogo. Você não vai perceber até ser tarde.
+
+**Faça isto para cada banda — os valores não são os mesmos.** O seeing em particular
+muda de `g` para `r`, então você vai mudar `SEEING_FWHM` (e talvez seu kernel) entre
+elas.
 
 **Converta o seeing para pixels você mesmo.** Você precisa disso para escolher o kernel:
 

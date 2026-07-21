@@ -250,24 +250,50 @@ Read it too. It is shorter, and about half of it is check-plot options.
 ## 2 · Read the header before you write the config
 
 Half the parameters in `default.sex` are not free choices — they are facts about your
-image. Go get them.
+image. Go get them from the **header**.
+
+You already know DS9, so use it: open the image, then
+**File → Display Header** (or the `Header` button in the toolbar). Scroll through the
+keywords and find the four that matter. You can search the header text for the keyword
+name.
 
 ```bash
-python3 scripts/01_read_header.py
+ds9 data/HYDRA_D_0003_R.fits &
+# then: File → Display Header
 ```
 
-This prints the keywords you need. Write down the four that matter:
+Prefer the terminal? Any of these prints the header without opening a viewer:
+
+```bash
+# with astropy
+python3 -c "from astropy.io import fits; fits.open('data/HYDRA_D_0003_R.fits').info(); print(repr(fits.getheader('data/HYDRA_D_0003_R.fits')))"
+
+# or, if you have the FTOOLS / cfitsio utilities
+fold data/HYDRA_D_0003_R.fits | head
+listhead data/HYDRA_D_0003_R.fits
+```
+
+> **One catch:** in these files the data (and the useful keywords) may sit in
+> **extension 1**, not extension 0. If the header of the first extension looks empty,
+> look at the next one — in DS9 use the extension/HDU selector; in astropy that is
+> `fits.getheader('...', 1)`.
+
+Write down the four that matter:
 
 | Header keyword | Goes into | Why |
 |---|---|---|
 | `FWHMMEAN` | `SEEING_FWHM` **and** your choice of `FILTER_NAME` | in arcsec |
 | `SATURATE` | `SATUR_LEVEL` | **the default is 50000. Yours is not.** |
-| `GAIN` | `GAIN` | |
+| `GAIN` | `GAIN` | electrons per count |
 | pixel scale | `PIXEL_SCALE` | S-PLUS: 0.55 ″/px |
 
 > ⚠️ **`SATUR_LEVEL` is the one people get wrong.** If you leave it at the default,
 > saturated stars are never flagged as saturated, and `FLAGS = 4` never appears in your
 > catalog. You will not notice until it is too late.
+
+**Do this for each band — the values are not the same.** The seeing in particular
+differs from `g` to `r`, so you will change `SEEING_FWHM` (and possibly your kernel)
+between them.
 
 **Convert the seeing to pixels yourself.** You need it to pick a kernel:
 
