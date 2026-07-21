@@ -413,7 +413,7 @@ Por enquanto essas colunas básicas bastam para criar um primeiro catálogo — 
 entender a ferramenta e escolher sua melhor configuração. Tenha a lista mais completa em
 mente para o futuro, quando você construir o catálogo *oficial*.
 
-> Travado em quais colunas existem? Rode `sex -dd` — a lista completa de parâmetros está
+> Travado em quais colunas existem? Rode `sex -dp` — a lista completa de parâmetros está
 > lá, comentada, com uma descrição de uma linha de cada uma. E `solutions/default.param`
 > tem uma versão resolvida completa se você precisar.
 
