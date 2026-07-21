@@ -412,7 +412,7 @@ For now, those basic columns are enough to build a first catalog — just to und
 the tool and choose your best configuration. Keep the fuller list in mind for later,
 when you build the *official* catalog.
 
-> Stuck on which columns exist? Run `sex -dd` — the full parameter list is in there,
+> Stuck on which columns exist? Run `sex -dp` — the full parameter list is in there,
 > commented, with a one-line description of each. And `solutions/default.param` has a
 > complete worked version if you need it.
 
@@ -440,7 +440,7 @@ sex data/HYDRA_D_0003_R.fits -c config/default.sex \
 `-PARAM value`. This is not a convenience — it is what makes many bands tractable with
 one config file.
 
-### Did it work?
+### Did it work?Stuck on which columns exist? Run sex -dd — the full parameter list is in there, commented, with a one-line description of each. And solutions/default.param has a complete worked version if you need it.
 
 Look at what SExtractor printed:
 
