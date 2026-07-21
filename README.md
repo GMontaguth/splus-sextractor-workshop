@@ -5,10 +5,11 @@
 
 # Building Astronomical Catalogs with Source Extractor
 
+📄 **Lecture slides:** [Lecture4_COMPLETE.pdf](Lecture4_COMPLETE.pdf)
+
 **Hands-on Activity 2 — S-PLUS School**
 Gissel Montaguth
 
-📄 **Lecture slides:** [Lecture4_COMPLETE.pdf](Lecture4_COMPLETE.pdf)
 
 ---
 
