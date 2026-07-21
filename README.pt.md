@@ -5,6 +5,8 @@
 
 # Construindo catálogos astronômicos com o Source Extractor
 
+📄 **Slides da aula:** [Lecture4_COMPLETE.pdf](Lecture4_COMPLETE.pdf)
+
 **Atividade prática 2 — Escola S-PLUS**
 Gissel Montaguth
 
